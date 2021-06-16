@@ -1,0 +1,30 @@
+{
+  "name": "waittimes",
+  "author": "Thomas Stoeckert",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Wait Times",
+    "uuid": "5722eb28-1698-4e78-91f1-227d1ea493f1",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "o_parkID",
+      "i_resultString"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
