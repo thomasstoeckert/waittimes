@@ -38,6 +38,8 @@ Park park_array[] =
         {"Efteling", 6},
 };
 
+static int s_selected_park_index;
+
 static bool s_are_attractions_loading = false;
 
 static char s_attraction_names[100][128];
@@ -107,6 +109,7 @@ select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
   {
     // Construct the message
     int parkID = park_array[cell_index->row].id;
+    s_selected_park_index = cell_index->row;
     dict_write_int(out_iter, MESSAGE_KEY_o_parkID, &parkID, sizeof(int), true);
 
     result = app_message_outbox_send();
@@ -114,7 +117,8 @@ select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
     if (result != APP_MSG_OK)
     {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int)result);
-    } else 
+    }
+    else
     {
       APP_LOG(APP_LOG_LEVEL_INFO, "Message Sent");
     }
@@ -167,7 +171,8 @@ static void parks_browse_unload(Window *window)
   menu_layer_destroy(s_parks_menu_layer);
 }
 
-static uint16_t get_attractions_row_count(struct MenuLayer *menulayer, uint16_t section_index, void *callback_context) {
+static uint16_t get_attractions_row_count(struct MenuLayer *menulayer, uint16_t section_index, void *callback_context)
+{
   return s_num_attractions;
 }
 
@@ -176,6 +181,16 @@ static void draw_attractions_row_handler(GContext *ctx, const Layer *cell_layer,
 {
   int i = cell_index->row;
   menu_cell_basic_draw(ctx, cell_layer, s_attraction_names[i], s_attraction_status[i], NULL);
+}
+
+static int16_t get_attractions_header_height(struct MenuLayer *menulayer, uint16_t section_index, void *callback_context)
+{
+  return MENU_CELL_BASIC_HEADER_HEIGHT;
+}
+
+static void draw_attractions_header(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *callback_context)
+{
+  menu_cell_basic_header_draw(ctx, cell_layer, park_array[s_selected_park_index].name);
 }
 
 static void attraction_list_load(Window *window)
@@ -187,6 +202,8 @@ static void attraction_list_load(Window *window)
   menu_layer_set_callbacks(s_attractions_menu_layer, NULL, (MenuLayerCallbacks){
                                                                .get_num_rows = get_attractions_row_count,
                                                                .draw_row = draw_attractions_row_handler,
+                                                               .get_header_height = get_attractions_header_height,
+                                                               .draw_header = draw_attractions_header
                                                            });
   menu_layer_set_click_config_onto_window(s_attractions_menu_layer, window);
 
