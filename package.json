@@ -21,7 +21,9 @@
     },
     "messageKeys": [
       "o_parkID",
-      "i_resultString"
+      "i_attractionNameString[100]",
+      "i_attractionStatus[100]",
+      "i_attractionCount"
     ],
     "resources": {
       "media": []
