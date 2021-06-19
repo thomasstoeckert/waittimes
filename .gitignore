@@ -1,3 +1,6 @@
 .vscode/*
 build/*
 .lock-waf_linux2_build
+
+
+pebble_screenshot_*
