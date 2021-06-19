@@ -6,36 +6,45 @@ static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
 typedef struct
 {
   char name[32];
+  int subtitleID;
   int id;
 } Park;
 
-Park park_array[] =
+const char* const park_groups[] = {
+  "Walt Disney World",
+  "Universal Orlando",
+  "Disneyland Resort",
+  "Tokyo Disney Resort",
+  "Disneyland Paris Resort"
+};
+
+const Park park_array[] =
     {
         // Park name is human-readable display text,
         // ID is the index in the javascript array
         /* --- Walt Disney World --- */
-        {"Magic Kingdom", 0},
-        {"EPCOT", 1},
-        {"Hollywood Studios", 2},
-        {"Animal Kingdom", 3},
+        {"Magic Kingdom", 0, 0},
+        {"EPCOT", 0, 1},
+        {"Hollywood Studios", 0, 2},
+        {"Animal Kingdom", 0, 3},
         /* --- Universal Orlando --- */
-        {"Universal Florida", 16},
-        {"Islands of Adventure", 14},
-        {"Volcano Bay", 17},
+        {"Universal Florida", 1, 16},
+        {"Islands of Adventure", 1, 14},
+        {"Volcano Bay", 1, 17},
         /* --- Disneyland --- */
-        {"Disneyland", 4},
-        {"Disney's California Adventure", 5},
+        {"Disneyland", 2, 4},
+        {"Disney's California Adventure", 2, 5},
         /* --- Disney (Abroad) --- */
-        {"Tokyo Disneyland", 11},
-        {"Tokyo DisneySea", 12},
-        {"Disneyland Paris", 8},
-        {"Walt Disney Studios Paris", 7},
-        {"Hong Kong Disneyland", 9},
-        {"Shanghai Disneyland", 10},
+        {"Tokyo Disneyland", 3, 11},
+        {"Tokyo DisneySea", 3, 12},
+        {"Disneyland Paris", 4, 8},
+        {"Walt Disney Studios Paris", 4, 7},
+        {"Hong Kong Disneyland", -1, 9},
+        {"Shanghai Disneyland", -1, 10},
         /* --- Other --- */
-        {"Universal Hollywood", 13},
-        {"Europa Park", 15},
-        {"Efteling", 6},
+        {"Universal Hollywood", -1, 13},
+        {"Europa Park", -1, 15},
+        {"Efteling", -1, 6},
 };
 
 static int s_selected_park_index;
@@ -143,8 +152,13 @@ static uint16_t get_parks_row_count(struct MenuLayer *menulayer, uint16_t sectio
 static void draw_parks_row_handler(GContext *ctx, const Layer *cell_layer,
                                    MenuIndex *cell_index, void *callback_context)
 {
-  char *name = park_array[cell_index->row].name;
-  menu_cell_basic_draw(ctx, cell_layer, name, NULL, NULL);
+  const char *name = park_array[cell_index->row].name;
+  int subtitleID = park_array[cell_index->row].subtitleID;
+  const char *subtitle = NULL;
+  if(subtitleID != -1) {
+    subtitle = park_groups[subtitleID];
+  }
+  menu_cell_basic_draw(ctx, cell_layer, name, subtitle, NULL);
 }
 
 static void parks_browse_load(Window *window)
@@ -161,6 +175,8 @@ static void parks_browse_load(Window *window)
                                                 .select_click = select_park_callback});
   // Bind the window's input functionality onto the menu
   menu_layer_set_click_config_onto_window(s_parks_menu_layer, window);
+
+  menu_layer_set_highlight_colors(s_parks_menu_layer, GColorBulgarianRose, GColorWhite);
 
   // Add the menu layer as a child of the main window
   layer_add_child(window_layer, menu_layer_get_layer(s_parks_menu_layer));
@@ -206,6 +222,8 @@ static void attraction_list_load(Window *window)
                                                                .draw_header = draw_attractions_header
                                                            });
   menu_layer_set_click_config_onto_window(s_attractions_menu_layer, window);
+
+  menu_layer_set_highlight_colors(s_attractions_menu_layer, GColorBulgarianRose, GColorWhite);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_attractions_menu_layer));
 }
