@@ -91,6 +91,17 @@ function getParkWaitTimes(parkID) {
         }
     }
 
+    request.onerror = function () {
+        // Something wrong happened.
+        var errorPayload = {};
+        errorPayload[keys.i_connectionError] = 1;
+        Pebble.sendAppMessage(errorPayload, function () {
+            console.log("Error message sent to client");
+        }, function (e) {
+            console.log('Message failed: ' + JSON.stringify(e));
+        });
+    }
+
     request.open(method, url);
     request.send();
 }
@@ -109,19 +120,24 @@ Pebble.addEventListener("ready", function (e) {
     // We're ready to roll!
     console.log("PebbleKit JS ready!");
 
-    Pebble.addEventListener('appmessage', function (e) {
-        // Get the dictionary from the message
-        var data = e.payload;
-        fixMissingNumbers(data);
+    // Let the app know we're ready to process messages
+    var payload = {};
+    payload[keys._ready] = 1;
+    Pebble.sendAppMessage(payload, function () {});
+});
 
-        console.log("Got a request...");
-        console.log(JSON.stringify(data));
+Pebble.addEventListener('appmessage', function (e) {
+    // Get the dictionary from the message
+    var data = e.payload;
+    fixMissingNumbers(data);
 
-        // Is this a parkID request?
-        if (data[keys.o_parkID] !== undefined) {
-            // It is! We need to get that information from the server
-            console.log("Got a request to get the data for parkID " + data[keys.o_parkID]);
-            getParkWaitTimes(data[keys.o_parkID]);
-        }
-    });
+    console.log("Got a request...");
+    console.log(JSON.stringify(data));
+
+    // Is this a parkID request?
+    if (data[keys.o_parkID] !== undefined) {
+        // It is! We need to get that information from the server
+        console.log("Got a request to get the data for parkID " + data[keys.o_parkID]);
+        getParkWaitTimes(data[keys.o_parkID]);
+    }
 });

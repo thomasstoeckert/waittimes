@@ -20,13 +20,31 @@
       "watchface": false
     },
     "messageKeys": [
+      "_ready",
       "o_parkID",
       "i_attractionNameString[100]",
       "i_attractionStatus[100]",
-      "i_attractionCount"
+      "i_attractionCount",
+      "i_connectionError"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type": "raw",
+          "name": "CHECK_INTERNET",
+          "file": "pdc/Pebble_80x80_Check_internet_connection.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "WATCH_DISCONNECTED",
+          "file": "pdc/Pebble_80x80_Watch_disconnected.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "GENERIC_QUESTION",
+          "file": "pdc/Pebble_80x80_Generic_question.pdc"
+        }
+      ]
     }
   }
 }

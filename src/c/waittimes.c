@@ -1,7 +1,12 @@
 #include <pebble.h>
 
-static Window *s_parks_browse_window, *s_attraction_list_window;
+static Window *s_parks_browse_window, *s_attraction_list_window, *s_message_window;
 static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
+static Layer *s_message_canvas_layer;
+
+static TextLayer *s_message_text_layer;
+
+static GDrawCommandImage *s_pdc_generic, *s_pdc_network, *s_pdc_connection;
 
 typedef struct
 {
@@ -53,6 +58,10 @@ const Park park_array[] =
 static int s_selected_park_index;
 
 static bool s_are_attractions_loading = false;
+static bool s_js_ready = false;
+
+static int s_message_code = 0;
+static char s_message_text[64] = "";
 
 static char s_attraction_names[100][128];
 static char s_attraction_status[100][16];
@@ -66,6 +75,23 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
 {
   // A new message has been successfully received.
   APP_LOG(APP_LOG_LEVEL_INFO, "New message received.");
+
+  Tuple *ready_tuple = dict_find(iter, MESSAGE_KEY__ready);
+  if(ready_tuple) 
+  {
+    s_js_ready = true;
+  }
+
+  Tuple *connection_tuple = dict_find(iter, MESSAGE_KEY_i_connectionError);
+  if(connection_tuple)
+  {
+    // Something wrong happen during communication :(
+    // Let the user know.
+    s_are_attractions_loading = false;
+    s_message_code = 2;
+    strcpy(s_message_text, "Connection Error");
+    window_stack_push(s_message_window, true);
+  }
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_i_attractionCount);
   if (count_tuple)
@@ -105,8 +131,11 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
   }
 }
 
-static void send_park_request(int parkID)
+static void send_park_request(int parkIndex)
 {
+  // If javascript is not ready, do not send :)
+  if(!s_js_ready) return;
+
   // We want to send a message to the javascript component.
   // To do so, we do the following:
   // 1. Create the payload (out_iter)
@@ -116,9 +145,11 @@ static void send_park_request(int parkID)
 
   if (result == APP_MSG_OK)
   {
+
     // 3. If the outbox is ready for us to send, we then need to prepare the payload
-    int parkID = park_array[parkID].id;
+    int parkID = park_array[parkIndex].id;
     dict_write_int(out_iter, MESSAGE_KEY_o_parkID, &parkID, sizeof(int), true);
+
 
     // 4. Send the message via the outbox.
     result = app_message_outbox_send();
@@ -127,6 +158,10 @@ static void send_park_request(int parkID)
     {
       // If there was an error in sending the message, oops.
       APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox for %d: %d", parkID, (int)result);
+      s_are_attractions_loading = false;
+      s_message_code = 2;
+      strcpy(s_message_text, "BT Error");
+      window_stack_push(s_message_window, true);
     }
     else
     {
@@ -141,7 +176,11 @@ static void send_park_request(int parkID)
   else
   {
     // Outbox cannot be used right now
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing the outbox for %d: %d", parkID, (int)result);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing the outbox for %d: %d", parkIndex, (int)result);
+    s_are_attractions_loading = false;
+    s_message_code = 2;
+    strcpy(s_message_text, "BT Error");
+    window_stack_push(s_message_window, true);
   }
 }
 
@@ -159,7 +198,7 @@ select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
   APP_LOG(APP_LOG_LEVEL_INFO, "Park %s has been clicked", park_array[cell_index->row].name);
 
   // Send the park load request
-  send_park_request(cell_index->row);
+  send_park_request((int)cell_index->row);
 
   // Push the loading window
   // TODO: Loading window
@@ -279,6 +318,77 @@ static void attraction_list_unload(Window *window)
 }
 
 /*
+ * --- Message Window functionality ---
+ *
+ */
+static void message_canvas_update(Layer *layer, GContext *ctx)
+{
+  GPoint origin = GPoint(0, 0);
+
+  // Draw the GDrawCommandImgae to the GContext
+  // Switch based upon which message ID we have
+  switch (s_message_code)
+  {
+  case 1:
+    // No app connection
+    gdraw_command_image_draw(ctx, s_pdc_connection, origin);
+  case 2:
+    // No internet :D
+    gdraw_command_image_draw(ctx, s_pdc_network, origin);
+    break;
+  default:
+    // Generic Response
+    gdraw_command_image_draw(ctx, s_pdc_generic, origin);
+    break;
+  }
+}
+
+static void message_window_load(Window *window)
+{
+  // Get our root properties for the window
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+
+  // Create our message page
+  window_set_background_color(window, GColorBulgarianRose);
+  
+  // Create our canvas layer (for drawing graphics)
+#if defined(PBL_ROUND)
+  GRect icon_bounds = GRect(50, 50, bounds.size.w, bounds.size.h);
+#else
+  GRect icon_bounds = GRect(30, 30, bounds.size.w, bounds.size.h);
+#endif
+
+  s_message_canvas_layer = layer_create(icon_bounds);
+
+  // Set the layer update proc
+  layer_set_update_proc(s_message_canvas_layer, message_canvas_update);
+
+  layer_add_child(window_layer, s_message_canvas_layer);
+
+  // Add our text over top
+#if defined(PBL_ROUND)
+  GRect text_bounds = GRect(0, 125, bounds.size.w, 20);
+#else
+  GRect text_bounds = GRect(0, 128, bounds.size.w, 20);
+#endif
+
+  s_message_text_layer = text_layer_create(text_bounds);
+  text_layer_set_text(s_message_text_layer, s_message_text);
+  text_layer_set_text_alignment(s_message_text_layer, GTextAlignmentCenter);
+  text_layer_set_background_color(s_message_text_layer, GColorClear);
+  text_layer_set_text_color(s_message_text_layer, GColorWhite);
+
+  layer_add_child(window_layer, text_layer_get_layer(s_message_text_layer));
+}
+
+static void message_window_unload(Window *window)
+{
+  text_layer_destroy(s_message_text_layer);
+  layer_destroy(s_message_canvas_layer);
+}
+
+/*
  * --- Main app management functions ---
  *
  */
@@ -300,6 +410,16 @@ static void init(void)
   window_set_window_handlers(
       s_attraction_list_window, (WindowHandlers){.load = attraction_list_load,
                                                  .unload = attraction_list_unload});
+  
+  // An intermediate "message" window
+  s_message_window = window_create();
+  window_set_window_handlers(
+    s_message_window, (WindowHandlers){.load = message_window_load, .unload = message_window_unload});
+
+  // Load our PDC assets
+  s_pdc_connection = gdraw_command_image_create_with_resource(RESOURCE_ID_WATCH_DISCONNECTED);
+  s_pdc_network = gdraw_command_image_create_with_resource(RESOURCE_ID_CHECK_INTERNET);
+  s_pdc_generic = gdraw_command_image_create_with_resource(RESOURCE_ID_GENERIC_QUESTION);
 
   // Push our main menu window onto the stack.
   window_stack_push(s_parks_browse_window, false);
@@ -310,6 +430,7 @@ static void deinit(void)
   // Destroy the windows
   window_destroy(s_parks_browse_window);
   window_destroy(s_attraction_list_window);
+  window_destroy(s_message_window);
 }
 
 int main(void)
