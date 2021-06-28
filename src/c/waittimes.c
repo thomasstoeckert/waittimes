@@ -1,7 +1,5 @@
 #include <pebble.h>
 
-#define SETTINGS_KEY 1
-
 static Window *s_parks_browse_window, *s_attraction_list_window, *s_message_window;
 static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
 static Layer *s_message_canvas_layer;
@@ -56,6 +54,13 @@ const Park park_array[] =
         {"Efteling", -1, 6},
 };
 
+// -- User Settings Variables -- //
+
+#define SETTINGS_KEY 1
+
+// This array stores index pointers to the parks in the mother park_array.
+// This is what is used to build the display list, with each element pointing at
+// the proper park in the park_array.
 static int s_selected_parks_array[18];
 static int s_num_selected_parks = -1;
 
@@ -66,6 +71,8 @@ typedef struct ClaySettings
 
 static ClaySettings s_settings;
 
+// -- Content Display Variables -- //
+
 static int s_selected_park_index;
 
 static bool s_are_attractions_loading = false;
@@ -73,6 +80,8 @@ static bool s_js_ready = false;
 
 static int s_message_code = 0;
 static char s_message_text[64] = "";
+
+// -- Fetched Information -- //
 
 static char s_attraction_names[100][128];
 static char s_attraction_status[100][16];
@@ -110,7 +119,7 @@ static void update_display()
 
   // Kill existing error page, if exists
   window_stack_remove(s_message_window, true);
-  
+
   if(s_num_selected_parks == 0) {
     // Show the error page
     s_message_code = 0;
