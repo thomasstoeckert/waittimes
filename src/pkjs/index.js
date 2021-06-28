@@ -1,4 +1,5 @@
 var keys = require('message_keys');
+var Clay = require('pebble-clay');
 
 const API_BASE_URL = "https://api.themeparks.wiki/preview/parks/";
 const API_PARKS_KEYS = [
@@ -115,6 +116,9 @@ function fixMissingNumbers(dict) {
         }
     }
 }
+
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig);
 
 Pebble.addEventListener("ready", function (e) {
     // We're ready to roll!

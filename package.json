@@ -2,9 +2,16 @@
   "name": "waittimes",
   "author": "Thomas Stoeckert",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
+  "capabilities": [
+    "configurable"
+  ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
   "pebble": {
     "displayName": "Wait Times",
     "uuid": "5722eb28-1698-4e78-91f1-227d1ea493f1",
@@ -25,7 +32,8 @@
       "i_attractionNameString[100]",
       "i_attractionStatus[100]",
       "i_attractionCount",
-      "i_connectionError"
+      "i_connectionError",
+      "c_showPark[18]"
     ],
     "resources": {
       "media": [

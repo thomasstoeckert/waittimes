@@ -1,5 +1,7 @@
 #include <pebble.h>
 
+#define SETTINGS_KEY 1
+
 static Window *s_parks_browse_window, *s_attraction_list_window, *s_message_window;
 static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
 static Layer *s_message_canvas_layer;
@@ -15,16 +17,15 @@ typedef struct
   int id;
 } Park;
 
-const char* const park_groups[] = {
-  "Walt Disney World",
-  "Universal Orlando",
-  "Disneyland Resort",
-  "Tokyo Disney Resort",
-  "Disneyland Paris Resort"
-};
+const char *const park_groups[] = {
+    "Walt Disney World",
+    "Universal Orlando",
+    "Disneyland Resort",
+    "Tokyo Disney Resort",
+    "Disneyland Paris Resort"};
 
 // This could technically also be offloaded to the API, but I don't want the user
-// to wait twice each time they load the app (1x for loading the app, 1x for 
+// to wait twice each time they load the app (1x for loading the app, 1x for
 // loading a park's times)
 const Park park_array[] =
     {
@@ -55,6 +56,16 @@ const Park park_array[] =
         {"Efteling", -1, 6},
 };
 
+static int s_selected_parks_array[18];
+static int s_num_selected_parks = -1;
+
+typedef struct ClaySettings
+{
+  int parkVisibility[18];
+} ClaySettings;
+
+static ClaySettings s_settings;
+
 static int s_selected_park_index;
 
 static bool s_are_attractions_loading = false;
@@ -68,6 +79,65 @@ static char s_attraction_status[100][16];
 static int s_num_attractions;
 
 /*
+ * --- App configuration functionaliy ---
+ *
+ */
+static void default_settings()
+{
+  int count = sizeof(park_array) / sizeof(Park);
+  for(int i = 0; i < count; i++) {
+    s_settings.parkVisibility[i] = 1;
+  }
+}
+
+static void update_park_data()
+{
+  // Recalculate our selected parks
+  int total_parks = sizeof(park_array) / sizeof(Park);
+  s_num_selected_parks = 0;
+
+  // If the park is visible, add its index to the selected parks array
+  for (int i = 0; i < total_parks; i++)
+  {
+    if (s_settings.parkVisibility[i] == 1)
+      s_selected_parks_array[s_num_selected_parks++] = i; // Also increment s_num_selected_parks
+  }
+}
+
+static void update_display()
+{
+  update_park_data();
+
+  // Kill existing error page, if exists
+  window_stack_remove(s_message_window, true);
+  
+  if(s_num_selected_parks == 0) {
+    // Show the error page
+    s_message_code = 0;
+    strcpy(s_message_text, "No Parks Selected");
+    window_stack_push(s_message_window, true);
+  }
+
+  menu_layer_set_selected_index(s_parks_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
+  menu_layer_reload_data(s_parks_menu_layer);
+}
+
+static void load_settings()
+{
+  // load the default settings
+  default_settings();
+  // Read settings from persistent storage, if they exist.
+  persist_read_data(SETTINGS_KEY, &s_settings, sizeof(s_settings));
+}
+
+static void save_settings()
+{
+  persist_write_data(SETTINGS_KEY, &s_settings, sizeof(s_settings));
+  // Update the display based on the new settings
+  update_display();
+}
+
+/*
  * --- App Communication / Messaging Functionality ---
  *
  */
@@ -77,13 +147,13 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
   APP_LOG(APP_LOG_LEVEL_INFO, "New message received.");
 
   Tuple *ready_tuple = dict_find(iter, MESSAGE_KEY__ready);
-  if(ready_tuple) 
+  if (ready_tuple)
   {
     s_js_ready = true;
   }
 
   Tuple *connection_tuple = dict_find(iter, MESSAGE_KEY_i_connectionError);
-  if(connection_tuple)
+  if (connection_tuple)
   {
     // Something wrong happen during communication :(
     // Let the user know.
@@ -129,12 +199,39 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     // Trigger the loading of the attractions page
     window_stack_push(s_attraction_list_window, true);
   }
+
+  Tuple *settings_tuple = dict_find(iter, MESSAGE_KEY_c_showPark);
+  if (settings_tuple)
+  {
+    // If we have one key, we have them all. Dig through the whole showPark array
+    for (int i = 0; i < 18; i++)
+    {
+      Tuple *show_tuple = dict_find(iter, MESSAGE_KEY_c_showPark + i);
+
+      if (!show_tuple)
+      {
+        // We can't find this.
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to find visibility setting for index %d", i);
+        continue;
+      }
+
+      // Update the setting value
+      s_settings.parkVisibility[i] = show_tuple->value->int32;
+    }
+
+    // Save our settings
+    save_settings();
+
+    // Update our display
+    update_display();
+  }
 }
 
 static void send_park_request(int parkIndex)
 {
   // If javascript is not ready, do not send :)
-  if(!s_js_ready) return;
+  if (!s_js_ready)
+    return;
 
   // We want to send a message to the javascript component.
   // To do so, we do the following:
@@ -149,7 +246,6 @@ static void send_park_request(int parkIndex)
     // 3. If the outbox is ready for us to send, we then need to prepare the payload
     int parkID = park_array[parkIndex].id;
     dict_write_int(out_iter, MESSAGE_KEY_o_parkID, &parkID, sizeof(int), true);
-
 
     // 4. Send the message via the outbox.
     result = app_message_outbox_send();
@@ -194,11 +290,12 @@ static void
 select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
                      void *callback_context)
 {
+  int index = s_selected_parks_array[cell_index->row];
 
-  APP_LOG(APP_LOG_LEVEL_INFO, "Park %s has been clicked", park_array[cell_index->row].name);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Park %s has been clicked", park_array[index].name);
 
   // Send the park load request
-  send_park_request((int)cell_index->row);
+  send_park_request(index);
 
   // Push the loading window
   // TODO: Loading window
@@ -208,8 +305,7 @@ select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
 /// from the parks array)
 static uint16_t get_parks_row_count(struct MenuLayer *menulayer, uint16_t section_index, void *callback_context)
 {
-  int count = sizeof(park_array) / sizeof(Park);
-  return count;
+  return s_num_selected_parks;
 }
 
 /// This function is responsible for drawing each row of the parks page - namely
@@ -217,10 +313,18 @@ static uint16_t get_parks_row_count(struct MenuLayer *menulayer, uint16_t sectio
 static void draw_parks_row_handler(GContext *ctx, const Layer *cell_layer,
                                    MenuIndex *cell_index, void *callback_context)
 {
-  const char *name = park_array[cell_index->row].name;
-  int subtitleID = park_array[cell_index->row].subtitleID;
+  // Get our index from the cell index
+  int index = cell_index->row;
+  // Translate that through the selected parks indexes
+  index = s_selected_parks_array[index];
+
+  // Get data for that park
+  const char *name = park_array[index].name;
+  int subtitleID = park_array[index].subtitleID;
+  
   const char *subtitle = NULL;
-  if(subtitleID != -1) {
+  if (subtitleID != -1)
+  {
     subtitle = park_groups[subtitleID];
   }
   menu_cell_basic_draw(ctx, cell_layer, name, subtitle, NULL);
@@ -247,6 +351,14 @@ static void parks_browse_load(Window *window)
 
   // Add the menu layer as a child of the main window
   layer_add_child(window_layer, menu_layer_get_layer(s_parks_menu_layer));
+
+  // If there are no parks, show an error page
+  if(s_num_selected_parks == 0) {
+    // Show the error page
+    s_message_code = 0;
+    strcpy(s_message_text, "No Parks Selected");
+    window_stack_push(s_message_window, true);
+  }
 }
 
 static void parks_browse_unload(Window *window)
@@ -265,7 +377,7 @@ static uint16_t get_attractions_row_count(struct MenuLayer *menulayer, uint16_t 
   return s_num_attractions;
 }
 
-/// This function renders a row for a given attraction (cell_index) in the attractions lists. 
+/// This function renders a row for a given attraction (cell_index) in the attractions lists.
 static void draw_attractions_row_handler(GContext *ctx, const Layer *cell_layer,
                                          MenuIndex *cell_index, void *callback_context)
 {
@@ -295,12 +407,7 @@ static void attraction_list_load(Window *window)
 
   // Create the attractions menu layer, assign callbacks for functionality
   s_attractions_menu_layer = menu_layer_create(bounds);
-  menu_layer_set_callbacks(s_attractions_menu_layer, NULL, (MenuLayerCallbacks){
-                                                               .get_num_rows = get_attractions_row_count,
-                                                               .draw_row = draw_attractions_row_handler,
-                                                               .get_header_height = get_attractions_header_height,
-                                                               .draw_header = draw_attractions_header
-                                                           });
+  menu_layer_set_callbacks(s_attractions_menu_layer, NULL, (MenuLayerCallbacks){.get_num_rows = get_attractions_row_count, .draw_row = draw_attractions_row_handler, .get_header_height = get_attractions_header_height, .draw_header = draw_attractions_header});
   // Bind user input (up/down/select) to the menu layer
   menu_layer_set_click_config_onto_window(s_attractions_menu_layer, window);
 
@@ -351,7 +458,7 @@ static void message_window_load(Window *window)
 
   // Create our message page
   window_set_background_color(window, GColorBulgarianRose);
-  
+
   // Create our canvas layer (for drawing graphics)
 #if defined(PBL_ROUND)
   GRect icon_bounds = GRect(50, 50, bounds.size.w, bounds.size.h);
@@ -395,6 +502,9 @@ static void message_window_unload(Window *window)
 
 static void init(void)
 {
+  load_settings();
+  update_park_data();
+
   // Configure app message settings
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received(inbox_received_callback);
@@ -410,11 +520,11 @@ static void init(void)
   window_set_window_handlers(
       s_attraction_list_window, (WindowHandlers){.load = attraction_list_load,
                                                  .unload = attraction_list_unload});
-  
+
   // An intermediate "message" window
   s_message_window = window_create();
   window_set_window_handlers(
-    s_message_window, (WindowHandlers){.load = message_window_load, .unload = message_window_unload});
+      s_message_window, (WindowHandlers){.load = message_window_load, .unload = message_window_unload});
 
   // Load our PDC assets
   s_pdc_connection = gdraw_command_image_create_with_resource(RESOURCE_ID_WATCH_DISCONNECTED);
