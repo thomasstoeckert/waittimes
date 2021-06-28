@@ -170,7 +170,7 @@ static void send_park_request(int parkIndex)
       APP_LOG(APP_LOG_LEVEL_INFO, "Park loading request sent for %d", parkID);
       s_are_attractions_loading = true;
       // And update our selected park index (for the header on the details page)
-      s_selected_park_index = parkID;
+      s_selected_park_index = parkIndex;
     }
   }
   else
