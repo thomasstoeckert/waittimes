@@ -183,6 +183,12 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
 
     // We need to parse ALL of the attractions. That's a lot, but we should be able to handle it.
     s_num_attractions = count_tuple->value->int32;
+
+    // Clear existing attraction data
+    memset(s_attraction_names, 0, sizeof(char) * 100 * 128);
+    memset(s_attraction_status, 0, sizeof(char) * 100 * 16);
+
+    // Parse our new data
     for (int i = 0; i < s_num_attractions; i++)
     {
       Tuple *name_tuple = dict_find(iter, MESSAGE_KEY_i_attractionNameString + i);
@@ -192,9 +198,25 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       {
         // We can't find all the information for this attraction. Something
         //  went wrong in the communication process.
+        if(name_tuple) {
+          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Recieved name tuple of %s", i, name_tuple->value->cstring);
+        } else {
+          APP_LOG(APP_LOG_LEVEL_ERROR, "[%d] Did not find name tuple", i);
+        }
+        
+        if (status_tuple) {
+          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Recieved status tuple of %s", i, status_tuple->value->cstring);
+        } else {
+          APP_LOG(APP_LOG_LEVEL_ERROR, "[%d] Did not find status tuple", i);
+        }
+        
+
+        
         APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to find all attraction information at index %d", i);
         continue;
       }
+
+      APP_LOG(APP_LOG_LEVEL_INFO, "Recieved index %d, with name %s and status %s", i, name_tuple->value->cstring, status_tuple->value->cstring);
 
       // Get this data into the relevant array
       strcpy(s_attraction_names[i], name_tuple->value->cstring);

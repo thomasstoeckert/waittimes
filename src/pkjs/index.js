@@ -46,7 +46,10 @@ function returnParkWaitTimes(attrTimesObject) {
         // Sometimes the wait time can be null. In such a case, we send the
         // status message
         if (attraction.waitTime == null) {
-            payloadStatuses.push(attraction.status);
+            // The attraction status can also be null. We need to send some basic
+            // information back, otherwise the attraction will not show up in
+            // the application.
+            payloadStatuses.push(attraction.status || "");
         } else {
             var waitString = attraction.waitTime.toString() + " minute";
             if(attraction.waitTime != 1) {
