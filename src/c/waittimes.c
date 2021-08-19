@@ -238,7 +238,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     for (int i = 0; i < 18; i++)
     {
       Tuple *show_tuple = dict_find(iter, MESSAGE_KEY_c_showPark + i);
-
+      
       if (!show_tuple)
       {
         // We can't find this.
@@ -247,7 +247,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       }
 
       // Update the setting value
-      s_settings.parkVisibility[i] = show_tuple->value->int32;
+      s_settings.parkVisibility[i] = show_tuple->value->int16;
     }
 
     // Save our settings
