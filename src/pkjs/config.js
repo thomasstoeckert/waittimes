@@ -1,11 +1,23 @@
 module.exports = [
     {
         "type": "heading",
-        "defaultValue": "WaitTimes Park Configuration"
+        "defaultValue": "WaitTimes Configuration"
     },
     {
-        "type": "text",
-        "defaultValue": "Select the parks you'd like to see on your watch."
+        "type": "section",
+        "items": [
+            {
+                "type": "heading",
+                "defaultValue": "Visibility"
+            },
+            {
+                "type": "toggle",
+                "messageKey": "c_showEmpty",
+                "label": "Show Empty Waits",
+                "defaultValue": false,
+                "description": "If true, the watchapp will show attractions with no posted wait or status. If false, it will hide these."
+            }
+        ]
     },
     {
         "type": "section",
@@ -13,6 +25,10 @@ module.exports = [
             {
                 "type": "heading",
                 "defaultValue": "Parks"
+            },
+            {
+                "type": "text",
+                "defaultValue": "Select the parks you'd like to see on your watch."
             },
             {
                 "type": "checkboxgroup",

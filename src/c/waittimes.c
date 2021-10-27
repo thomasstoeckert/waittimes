@@ -67,6 +67,7 @@ static int s_num_selected_parks = -1;
 typedef struct ClaySettings
 {
   int parkVisibility[18];
+  bool showEmpty;
 } ClaySettings;
 
 static ClaySettings s_settings;
@@ -97,6 +98,7 @@ static void default_settings()
   for(int i = 0; i < count; i++) {
     s_settings.parkVisibility[i] = 1;
   }
+  s_settings.showEmpty = false;
 }
 
 static void update_park_data()
@@ -183,6 +185,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
 
     // We need to parse ALL of the attractions. That's a lot, but we should be able to handle it.
     s_num_attractions = count_tuple->value->int32;
+    int attrCount = 0;
 
     // Clear existing attraction data
     memset(s_attraction_names, 0, sizeof(char) * 100 * 128);
@@ -194,7 +197,9 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       Tuple *name_tuple = dict_find(iter, MESSAGE_KEY_i_attractionNameString + i);
       Tuple *status_tuple = dict_find(iter, MESSAGE_KEY_i_attractionStatus + i);
 
-      if (!(name_tuple && status_tuple))
+      bool show_empty_condition = !(s_settings.showEmpty && (strcmp(status_tuple->value->cstring, "") == 0));
+
+      if (!(name_tuple && status_tuple && show_empty_condition))
       {
         // We can't find all the information for this attraction. Something
         //  went wrong in the communication process.
@@ -209,8 +214,12 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
         } else {
           APP_LOG(APP_LOG_LEVEL_ERROR, "[%d] Did not find status tuple", i);
         }
-        
 
+        if (show_empty_condition) {
+          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Status is not empty, including in list", i);
+        } else {
+          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Status is empty and empty statuses are disabled. Not including in list.", i);
+        }
         
         APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to find all attraction information at index %d", i);
         continue;
@@ -219,9 +228,12 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       APP_LOG(APP_LOG_LEVEL_INFO, "Recieved index %d, with name %s and status %s", i, name_tuple->value->cstring, status_tuple->value->cstring);
 
       // Get this data into the relevant array
-      strcpy(s_attraction_names[i], name_tuple->value->cstring);
-      strcpy(s_attraction_status[i], status_tuple->value->cstring);
+      strcpy(s_attraction_names[attrCount], name_tuple->value->cstring);
+      strcpy(s_attraction_status[attrCount], status_tuple->value->cstring);
+      attrCount++;
     }
+
+    s_num_attractions = attrCount;
 
     // We have all of our attraction information
     s_are_attractions_loading = false;
@@ -249,6 +261,9 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       // Update the setting value
       s_settings.parkVisibility[i] = show_tuple->value->int16;
     }
+
+    Tuple *showEmpty_tuple = dict_find(iter, MESSAGE_KEY_c_showEmpty);
+    s_settings.showEmpty = (showEmpty_tuple->value->int8 == 0);
 
     // Save our settings
     save_settings();
