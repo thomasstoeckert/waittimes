@@ -18,9 +18,12 @@ typedef struct
 const char *const park_groups[] = {
     "Walt Disney World",
     "Universal Orlando",
+    "SeaWorld Orlando",
     "Disneyland Resort",
     "Tokyo Disney Resort",
-    "Disneyland Paris Resort"};
+    "Disneyland Paris Resort",
+    "Europa-Park",
+    "PortAventura World"};
 
 // This could technically also be offloaded to the API, but I don't want the user
 // to wait twice each time they load the app (1x for loading the app, 1x for
@@ -29,45 +32,82 @@ const Park park_array[] =
     {
         // Park name is human-readable display text,
         // ID is the index in the javascript array
-        /* --- Walt Disney World --- */
-        {"Magic Kingdom", 0, 0},
-        {"EPCOT", 0, 1},
-        {"Hollywood Studios", 0, 2},
-        {"Animal Kingdom", 0, 3},
-        /* --- Universal Orlando --- */
-        {"Universal Florida", 1, 16},
-        {"Islands of Adventure", 1, 14},
-        {"Volcano Bay", 1, 17},
-        /* --- Disneyland --- */
-        {"Disneyland", 2, 4},
-        {"Disney's California Adventure", 2, 5},
-        /* --- Disney (Abroad) --- */
-        {"Tokyo Disneyland", 3, 11},
-        {"Tokyo DisneySea", 3, 12},
-        {"Disneyland Paris", 4, 8},
-        {"Walt Disney Studios Paris", 4, 7},
-        {"Hong Kong Disneyland", -1, 9},
-        {"Shanghai Disneyland", -1, 10},
-        /* --- Other --- */
-        {"Universal Hollywood", -1, 13},
-        {"Europa Park", -1, 15},
-        {"Efteling", -1, 6},
-};
+        {"Disneyland Park", 3, 0},
+        {"Disney's California Adventure", 3, 1},
+        {"California's Great America", -1, 2},
+        {"Knott's Berry Farm", -1, 3},
+        {"SeaWorld San Diego", -1, 4},
+        {"Universal Studios (Hollywood)", -1, 5},
+        {"Magic Kingdom", 0, 6},
+        {"Epcot", 0, 7},
+        {"Hollywood Studios", 0, 8},
+        {"Animal Kingdom", 0, 9},
+        {"Typhoon Lagoon", 0, 10},
+        {"Blizzard Beach", 0, 11},
+        {"Universal Studios (Florida)", 1, 12},
+        {"Universal Islands of Adventure", 1, 13},
+        {"Volcano Bay", 1, 14},
+        {"SeaWorld Orlando", 2, 15},
+        {"Aquatica Orlando", 2, 16},
+        {"Legoland Florida", -1, 17},
+        {"Busch Gardens Tampa Bay", -1, 18},
+        {"Busch Gardens Williamsburg", -1, 19},
+        {"Canada's Wonderland", -1, 20},
+        {"Carowinds", -1, 21},
+        {"Cedar Point", -1, 22},
+        {"Dollywood", -1, 23},
+        {"Dorney Park", -1, 24},
+        {"Hersheypark", -1, 25},
+        {"Kings Dominion", -1, 26},
+        {"Kings Island", -1, 27},
+        {"Michigan's Adventure", -1, 28},
+        {"SeaWorld San Antonio", -1, 29},
+        {"Silver Dollar City", -1, 30},
+        {"Valleyfair", -1, 31},
+        {"Worlds of Fun", -1, 32},
+        {"Alton Towers", -1, 33},
+        {"Chessington World of Adventures", -1, 34},
+        {"Legoland Windsor", -1, 35},
+        {"Thorpe Park", -1, 36},
+        {"Europa Park", 6, 37},
+        {"Rulantica", 6, 38},
+        {"Phantasialand", -1, 39},
+        {"Heide Park", -1, 40},
+        {"Walibi Holland", -1, 41},
+        {"Disneyland Paris", 5, 42},
+        {"Walt Disney Studios Park", 5, 43},
+        {"Parc Asterix", -1, 44},
+        {"Bellewaerde", -1, 45},
+        {"Plopsaland De Panne", -1, 46},
+        {"Holiday Park", -1, 47},
+        {"Liseberg", -1, 48},
+        {"Efteling", -1, 49},
+        {"Attractiepark Toverland", -1, 50},
+        {"Gardaland", -1, 51},
+        {"PortAventura Park", 7, 52},
+        {"Ferrari Land", 7, 53},
+        {"Aquatic Park", 7, 54},
+        {"Hong Kong Disneyland", -1, 55},
+        {"Shanghai Disneyland", -1, 56},
+        {"Tokyo Disneyland", 4, 57},
+        {"Tokyo DisneySea", 4, 58}};
 
 // -- User Settings Variables -- //
 
-#define SETTINGS_KEY 1
+#define SETTINGS_KEY 2
 
 // This array stores index pointers to the parks in the mother park_array.
 // This is what is used to build the display list, with each element pointing at
 // the proper park in the park_array.
-static int s_selected_parks_array[18];
+static int s_selected_parks_array[59];
 static int s_num_selected_parks = -1;
 
 typedef struct ClaySettings
 {
-  int parkVisibility[18];
+  int parkVisibility[59];
   bool showEmpty;
+  bool showShowTimes;
+  bool showValidDataOnly;
 } ClaySettings;
 
 static ClaySettings s_settings;
@@ -85,7 +125,7 @@ static char s_message_text[64] = "";
 // -- Fetched Information -- //
 
 static char s_attraction_names[100][128];
-static char s_attraction_status[100][16];
+static char s_attraction_status[100][20];
 static int s_num_attractions;
 
 /*
@@ -95,10 +135,13 @@ static int s_num_attractions;
 static void default_settings()
 {
   int count = sizeof(park_array) / sizeof(Park);
-  for(int i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++)
+  {
     s_settings.parkVisibility[i] = 1;
   }
   s_settings.showEmpty = false;
+  s_settings.showValidDataOnly = false;
+  s_settings.showShowTimes = true;
 }
 
 static void update_park_data()
@@ -122,7 +165,8 @@ static void update_display()
   // Kill existing error page, if exists
   window_stack_remove(s_message_window, true);
 
-  if(s_num_selected_parks == 0) {
+  if (s_num_selected_parks == 0)
+  {
     // Show the error page
     s_message_code = 0;
     strcpy(s_message_text, "No Parks Selected");
@@ -189,7 +233,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
 
     // Clear existing attraction data
     memset(s_attraction_names, 0, sizeof(char) * 100 * 128);
-    memset(s_attraction_status, 0, sizeof(char) * 100 * 16);
+    memset(s_attraction_status, 0, sizeof(char) * 100 * 20);
 
     // Parse our new data
     for (int i = 0; i < s_num_attractions; i++)
@@ -201,32 +245,10 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
 
       if (!(name_tuple && status_tuple && show_empty_condition))
       {
-        // We can't find all the information for this attraction. Something
-        //  went wrong in the communication process.
-        if(name_tuple) {
-          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Recieved name tuple of %s", i, name_tuple->value->cstring);
-        } else {
-          APP_LOG(APP_LOG_LEVEL_ERROR, "[%d] Did not find name tuple", i);
-        }
-        
-        if (status_tuple) {
-          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Recieved status tuple of %s", i, status_tuple->value->cstring);
-        } else {
-          APP_LOG(APP_LOG_LEVEL_ERROR, "[%d] Did not find status tuple", i);
-        }
-
-        if (show_empty_condition) {
-          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Status is not empty, including in list", i);
-        } else {
-          APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "[%d] Status is empty and empty statuses are disabled. Not including in list.", i);
-        }
-        
         APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to find all attraction information at index %d", i);
         continue;
       }
-
-      APP_LOG(APP_LOG_LEVEL_INFO, "Recieved index %d, with name %s and status %s", i, name_tuple->value->cstring, status_tuple->value->cstring);
-
+      
       // Get this data into the relevant array
       strcpy(s_attraction_names[attrCount], name_tuple->value->cstring);
       strcpy(s_attraction_status[attrCount], status_tuple->value->cstring);
@@ -243,14 +265,15 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     window_stack_push(s_attraction_list_window, true);
   }
 
-  Tuple *settings_tuple = dict_find(iter, MESSAGE_KEY_c_showPark);
+  Tuple *settings_tuple = dict_find(iter, MESSAGE_KEY_c_showParks);
   if (settings_tuple)
   {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "We've receieved a SHOW PARKS messsage");
     // If we have one key, we have them all. Dig through the whole showPark array
-    for (int i = 0; i < 18; i++)
+    for (int i = 0; i < 59; i++)
     {
-      Tuple *show_tuple = dict_find(iter, MESSAGE_KEY_c_showPark + i);
-      
+      Tuple *show_tuple = dict_find(iter, MESSAGE_KEY_c_showParks + i);
+
       if (!show_tuple)
       {
         // We can't find this.
@@ -262,14 +285,32 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       s_settings.parkVisibility[i] = show_tuple->value->int16;
     }
 
-    Tuple *showEmpty_tuple = dict_find(iter, MESSAGE_KEY_c_showEmpty);
-    s_settings.showEmpty = (showEmpty_tuple->value->int8 == 0);
-
     // Save our settings
     save_settings();
 
     // Update our display
     update_display();
+  }
+
+  Tuple *showEmpty_tuple = dict_find(iter, MESSAGE_KEY_c_showEmpty);
+  if (showEmpty_tuple)
+  {
+    s_settings.showEmpty = (showEmpty_tuple->value->int8 == 0);
+    save_settings();
+  }
+
+  Tuple *showShowTimes_tuple = dict_find(iter, MESSAGE_KEY_c_showShowTimes);
+  if (showShowTimes_tuple)
+  {
+    s_settings.showShowTimes = (showShowTimes_tuple->value->int8 == 0);
+    save_settings();
+  }
+
+  Tuple *showValidDataOnly_tuple = dict_find(iter, MESSAGE_KEY_c_showValidDataOnly);
+  if (showValidDataOnly_tuple)
+  {
+    s_settings.showValidDataOnly = (showValidDataOnly_tuple->value->int8 == 0);
+    save_settings();
   }
 }
 
@@ -291,7 +332,11 @@ static void send_park_request(int parkIndex)
 
     // 3. If the outbox is ready for us to send, we then need to prepare the payload
     int parkID = park_array[parkIndex].id;
+    int showShowTimes = s_settings.showShowTimes ? 1 : 0;
+    int showValidDataOnly = s_settings.showValidDataOnly ? 1 : 0;
     dict_write_int(out_iter, MESSAGE_KEY_o_parkID, &parkID, sizeof(int), true);
+    dict_write_int(out_iter, MESSAGE_KEY_c_showShowTimes, &showShowTimes, sizeof(int), true);
+    dict_write_int(out_iter, MESSAGE_KEY_c_showValidDataOnly, &showValidDataOnly, sizeof(int), true);
 
     // 4. Send the message via the outbox.
     result = app_message_outbox_send();
@@ -367,7 +412,7 @@ static void draw_parks_row_handler(GContext *ctx, const Layer *cell_layer,
   // Get data for that park
   const char *name = park_array[index].name;
   int subtitleID = park_array[index].subtitleID;
-  
+
   const char *subtitle = NULL;
   if (subtitleID != -1)
   {
@@ -399,7 +444,8 @@ static void parks_browse_load(Window *window)
   layer_add_child(window_layer, menu_layer_get_layer(s_parks_menu_layer));
 
   // If there are no parks, show an error page
-  if(s_num_selected_parks == 0) {
+  if (s_num_selected_parks == 0)
+  {
     // Show the error page
     s_message_code = 0;
     strcpy(s_message_text, "No Parks Selected");

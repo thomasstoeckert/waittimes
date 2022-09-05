@@ -1,7 +1,7 @@
 {
   "name": "waittimes",
   "author": "Thomas Stoeckert",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "keywords": [
     "pebble-app"
   ],
@@ -16,6 +16,7 @@
     "displayName": "Wait Times",
     "uuid": "5722eb28-1698-4e78-91f1-227d1ea493f1",
     "sdkVersion": "3",
+    "versionCode": 1,
     "enableMultiJS": true,
     "targetPlatforms": [
       "aplite",
@@ -29,12 +30,14 @@
     "messageKeys": [
       "_ready",
       "o_parkID",
-      "i_attractionNameString[100]",
-      "i_attractionStatus[100]",
+      "i_attractionNameString[128]",
+      "i_attractionStatus[128]",
       "i_attractionCount",
       "i_connectionError",
-      "c_showPark[18]",
-      "c_showEmpty"
+      "c_showParks[59]",
+      "c_showEmpty",
+      "c_showShowTimes",
+      "c_showValidDataOnly"
     ],
     "resources": {
       "media": [
