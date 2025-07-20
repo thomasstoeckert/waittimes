@@ -102,9 +102,10 @@ function formatAttractionData(attraction, showShowTimes, showValidDataOnly) {
     if (!(attraction.entityType == "ATTRACTION" ||
         (attraction.entityType == "SHOW" && showShowTimes))) return;
 
-    attractionResult = [];
-    attractionResult[0] = attraction.name;
-    attractionResult[1] = attraction.status || "";
+    attractionResult = [
+        attraction.name,
+        attraction.status || ""
+    ];
 
     var hasValidData = false;
 
@@ -162,11 +163,17 @@ function formatAttractionData(attraction, showShowTimes, showValidDataOnly) {
         const queueData = attraction.queue;
 
         // If there's virtual line / boarding group data, display that first
-        if (queueData.BOARDING_GROUP != undefined) {
+        var hasQueueData = false;
+
+        if(queueData.BOARDING_GROUP != undefined) {
             const bgData = queueData.BOARDING_GROUP;
-            attractionResult[1] = "Groups " + bgData.currentGroupStart.toString() + "-" + bgData.currentGroupEnd.toString();
-            hasValidData = true;
-        } else if(queueData.STANDBY != null && queueData.STANDBY.waitTime != null) {
+            if(bgData.currentGroupStart != null && bgData.currentGroupEnd != null) {
+                attractionResult[1] = "Groups " + bgData.currentGroupStart.toString() + "-" + bgData.currentGroupEnd.toString();
+                hasQueueData = true;
+            }
+        }
+
+        if(!hasQueueData && queueData.STANDBY != null && queueData.STANDBY.waitTime != null) {
             // If there be no standby data, try to throw the status up there
             const standbyData = queueData.STANDBY;
             var waitString = standbyData.waitTime.toString() + " minute";
@@ -190,8 +197,20 @@ function returnParkWaitTimes(attrTimesObject, showShowTimes, showValidDataOnly) 
     // We also want to sort everything alphabetically by attraction name, too.
     
     // Sort the objects by the "name" key
+    console.log("Beginning to prepare wait times for return to pebble");
     var liveData = attrTimesObject.liveData;
-    liveData.sort(function (a, b) { return a.name.localeCompare(b.name); })
+    console.log("Collected live data. Sorting " + liveData.length + " attractions");
+    var counter = 0;
+    liveData.forEach(function (attraction) {
+        console.log(counter + ": " + attraction.name);
+        counter += 1;
+    });
+    
+    liveData.sort(function (a, b) { 
+        return a.name.toString().localeCompare(b.name.toString()); 
+    })
+
+    console.log("Sorted livedata by name. Moving on")
 
     // Build the list of attraction names
     var payloadNames = [];
@@ -199,6 +218,7 @@ function returnParkWaitTimes(attrTimesObject, showShowTimes, showValidDataOnly) 
     var payloadStatuses = [];
 
     liveData.forEach(function (attraction) {
+        console.log("Formatting data for " + attraction.name);
         result = formatAttractionData(attraction, showShowTimes, showValidDataOnly);
         if(result != null) {
             payloadNames.push(result[0]);
@@ -238,6 +258,7 @@ function getParkWaitTimes(parkID, showShowTimes, showValidDataOnly) {
                 returnParkWaitTimes(response, showShowTimes, showValidDataOnly);
             } catch (e) {
                 console.log("Error parsing wait times response: " + e.name + " > " + e.message);
+                console.log(e.stack);
             }
         }
     }
