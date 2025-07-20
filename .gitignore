@@ -6,3 +6,4 @@ pebble_screenshot_*
 
 node_modules/*
 package-lock.json
+.lock-waf_linux_build
