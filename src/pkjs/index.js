@@ -1,5 +1,7 @@
 var keys = require('message_keys');
 var Clay = require('pebble-clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
 const API_BASE_URL = "https://api.themeparks.wiki/v1/entity/";
 const API_PARKS_KEYS = [
@@ -288,8 +290,74 @@ function fixMissingNumbers(dict) {
     }
 }
 
-var clayConfig = require('./config');
-var clay = new Clay(clayConfig);
+
+var Destinations = require('./destinations');
+var destinations = new Destinations();
+
+function launchClayWithDynamicConfig() {
+    // get our new config data from destinations
+    const dest_data = destinations.cache_data.destinations;
+    console.log("Asked to launch clay with data from destinations: " + destinations.cache_data);
+    console.log(typeof destinations.cache_data)
+    // Build our dynamic parks data using the data from dest_data
+    const out_entries = []
+    const out_config = {
+        "type": "section",
+        "items": [
+            {
+                "type": "heading",
+                "defaultValue": "Parks"
+            },
+            {
+                "type": "text",
+                "defaultValue": "Select the parks you'd like to see on your watch."
+            }
+        ]
+    }
+
+    const lonely_parks = []
+
+    dest_data.forEach(element => {
+        const dest_parks = []
+
+        if(element.parks.length == 1) {
+            lonely_parks.push(element.parks[0].name);
+        } else {
+            element.parks.forEach(park => {
+                dest_parks.push(park.name);
+            });
+
+            dest_parks.sort();
+
+            out_entries.push({
+                "type": "checkboxgroup",
+                "messageKey": "nc_showparks",
+                "label": element.name,
+                "options": dest_parks
+            });
+        }
+    });
+
+    out_entries.sort((a, b) => a.label.localeCompare(b.label));
+
+    lonely_parks.sort()
+
+    out_entries.push({
+        "type": "checkboxgroup",
+        "messagekey": "nc_showparks",
+        "label": "Destination Parks",
+        "options": lonely_parks
+    })
+
+    out_config.items.push(...out_entries)
+
+    const new_config = JSON.parse(JSON.stringify(clayConfig));
+    new_config[2] = out_config;
+
+    clay.config = new_config;
+    
+    Pebble.openURL(clay.generateUrl());
+}
 
 Pebble.addEventListener("ready", function (e) {
     // We're ready to roll!
@@ -299,7 +367,39 @@ Pebble.addEventListener("ready", function (e) {
     var payload = {};
     payload[keys._ready] = 1;
     Pebble.sendAppMessage(payload, function () { });
+
+    console.log("Destinations is currently fresh? " + destinations.hasFreshDestinations());
+    console.log(destinations.cache_data);
 });
+
+Pebble.addEventListener('showConfiguration', function(e) {
+    // Run another web request to fetch the destinations endpoint. Store that locally,
+    // and prepare it for Clay.
+    const hasFreshDestinations = destinations.hasFreshDestinations();
+    console.log("Destinations is currently fresh? " + hasFreshDestinations);
+    console.log(destinations.cache_data);
+
+    if(hasFreshDestinations) {
+        launchClayWithDynamicConfig()
+    } else {
+        destinations.refreshCache(() => launchClayWithDynamicConfig());
+    }
+
+    // Send that data to clay, and run it.
+    // Pebble.openURL(clay.generateUrl());
+})
+
+Pebble.addEventListener('webviewclosed', function(e) {
+    if(e && !e.response) return;
+
+    var dict = clay.getSettings(e.response);
+    Pebble.sendAppMessage(dict, function(e) {
+        console.log('Sent config data to Pebble');
+    }, function(e) {
+        console.log('Failed to send config data!');
+        console.log(JSON.stringify(e));
+    })
+})
 
 Pebble.addEventListener('appmessage', function (e) {
     // Get the dictionary from the message
