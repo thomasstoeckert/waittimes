@@ -294,11 +294,15 @@ function fixMissingNumbers(dict) {
 var Destinations = require('./destinations');
 var destinations = new Destinations();
 
+var clayLookup = {}
+
 function launchClayWithDynamicConfig() {
     // get our new config data from destinations
     const dest_data = destinations.cache_data.destinations;
     console.log("Asked to launch clay with data from destinations: " + destinations.cache_data);
     console.log(typeof destinations.cache_data)
+
+    clayLookup = {};
     // Build our dynamic parks data using the data from dest_data
     const out_entries = []
     const out_config = {
@@ -311,6 +315,10 @@ function launchClayWithDynamicConfig() {
             {
                 "type": "text",
                 "defaultValue": "Select the parks you'd like to see on your watch."
+            },
+            {
+                "type": "text",
+                "defaultValue": "Data last fetched " + destinations.getCacheAgeInDays().toFixed(0) + " day(s) ago"
             }
         ]
     }
@@ -321,33 +329,39 @@ function launchClayWithDynamicConfig() {
         const dest_parks = []
 
         if(element.parks.length == 1) {
-            lonely_parks.push(element.parks[0].name);
+            lonely_parks.push([element.parks[0].name, element.parks[0].id, element.name]);
         } else {
             element.parks.forEach(park => {
-                dest_parks.push(park.name);
+                dest_parks.push([park.name, park.id, element.name]);
             });
 
-            dest_parks.sort();
+            dest_parks.sort((a, b) => a[0].localeCompare(b[0]));
+
+            clayLookup[element.id] = dest_parks;
 
             out_entries.push({
                 "type": "checkboxgroup",
-                "messageKey": "nc_showparks",
+                "messageKey": "pig_" + element.id,
                 "label": element.name,
-                "options": dest_parks
+                "options": dest_parks.map(item => item[0]),
+                "group": "park_input",
             });
         }
     });
 
     out_entries.sort((a, b) => a.label.localeCompare(b.label));
 
-    lonely_parks.sort()
+    lonely_parks.sort((a, b) => a[0].localeCompare(b[0]))
 
+    clayLookup["lonely"] = lonely_parks;
     out_entries.push({
         "type": "checkboxgroup",
-        "messagekey": "nc_showparks",
+        "messageKey": "pig_" + "lonely",
         "label": "Destination Parks",
-        "options": lonely_parks
+        "group": "park_input",
+        "options": lonely_parks.map(item => item[0])
     })
+
 
     out_config.items.push(...out_entries)
 
@@ -355,7 +369,7 @@ function launchClayWithDynamicConfig() {
     new_config[2] = out_config;
 
     clay.config = new_config;
-    
+    // console.log(clay.generateUrl());
     Pebble.openURL(clay.generateUrl());
 }
 
@@ -392,7 +406,77 @@ Pebble.addEventListener('showConfiguration', function(e) {
 Pebble.addEventListener('webviewclosed', function(e) {
     if(e && !e.response) return;
 
-    var dict = clay.getSettings(e.response);
+    // We need to somehow transform the arbitrary true/false responses into
+    // usable stuff for our watchapp...
+
+    // I think we might be able to do so in an interesting way. Let's check
+    // console.log(JSON.stringify(e.response));
+    const handled_response = JSON.parse(e.response);
+    console.log(e.response);
+    const filtered_response = {}
+
+    // Okay. We've baked in our data in the "pig" message tags. If we
+    // strip the "pig_" part out of the keys, we can reverse-engineer which
+    // of the parks the user wants...
+    const desired_park_names = [];
+    const desired_park_ids = [];
+    const desired_park_destination = [];
+
+    const desired_destination_names = [];
+    const inbound_keys = Object.keys(handled_response);
+    inbound_keys.forEach((in_key) => {
+        // Ignore things that don't contain our special tag
+
+        filtered_response[in_key] = handled_response[in_key];
+
+        if(!(in_key.includes("pig_"))) {
+            filtered_response[in_key] = handled_response[in_key];
+        }
+
+        const inbound_value = handled_response[in_key]["value"];
+
+        // Strip the index from the in_key
+        const inbound_index = in_key.substring(4);
+
+        // Lookup the dict using our index values
+        const lookup_values = clayLookup[inbound_index]
+
+        // Include the lookup_values only if the flag is true
+        for (let i = 0; i < inbound_value.length; i++) {
+            const park_true = inbound_value[i];
+            if(!park_true) continue;
+
+            const lookup_data = lookup_values[i];
+            const destination_name = lookup_data[2];
+            let destination_index = desired_destination_names.indexOf(destination_name);
+            if(destination_index == -1) {
+                desired_destination_names.push(destination_name);
+                destination_index = desired_destination_names.length;
+            }
+
+            desired_park_names.push(lookup_data[0]);
+            desired_park_ids.push(lookup_data[1]);
+            desired_park_destination.push(destination_index);
+        }
+    });
+
+    filtered_response["c_newpark_names"]     = {"value": desired_park_names};
+    filtered_response["c_newpark_ids"]       = {"value": desired_park_ids};
+    filtered_response["c_newpark_destids"]   = {"value": desired_park_destination};
+    filtered_response["c_newpark_destnames"] = {"value": desired_destination_names};
+    filtered_response["c_newpark_count"]     = {"value": desired_park_names.length};
+
+    console.log(JSON.stringify(filtered_response));
+
+    // This transforms the clay settings into stuff that the Pebble can handle
+    // BUT! It also stores the data into localstorage.
+    //
+    // This means that if we want to store our custom PIG stuff in there, we've
+    // got to handle it on the config side in a custom function on load...
+    //
+    // Gross..
+    var dict = clay.getSettings(JSON.stringify(filtered_response));
+    console.log(JSON.stringify(dict));
     Pebble.sendAppMessage(dict, function(e) {
         console.log('Sent config data to Pebble');
     }, function(e) {
