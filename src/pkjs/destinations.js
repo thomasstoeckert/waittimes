@@ -1,3 +1,5 @@
+var default_data = require('./default-destinations-data');
+
 function DestinationsAPI() {
     this.API_BASE_URL = "https://api.themeparks.wiki/v1/destinations";
 
@@ -5,8 +7,8 @@ function DestinationsAPI() {
     this.CACHE_AGE_KEY = "pwt_destinations_cache_last_fetched";
     this.CACHE_MAX_AGE_DAYS = 7;
 
-    this.cache_last_fetched = undefined;
-    this.cache_data = undefined;
+    this.cache_last_fetched = 0;
+    this.cache_data = default_data;
 
     // Attempt to load data from the cache
     if(this.isDataInCache()) {
@@ -36,7 +38,7 @@ DestinationsAPI.prototype.hitEndpoint = function(callback) {
                 console.log("Got a destinations response with " + destinations.length + " entries");
                 callback(response);
             } catch (e) {
-                console.log("Fuck");
+                console.log("Error while hitting destinations endpoint!");
                 console.log(e.name);
                 console.log(e.message);
                 console.log(e.stack);
@@ -53,7 +55,7 @@ DestinationsAPI.prototype.hitEndpoint = function(callback) {
     request.onerror = function() {
         // Something went wrong
         // Oh no :(
-        console.log("Something went wrong with the response :(");
+        console.log("Something went wrong with the request itself :(");
     }
 
     request.open(method, url);
@@ -106,10 +108,6 @@ DestinationsAPI.prototype.hasFreshDestinations = function() {
 }
 
 DestinationsAPI.prototype.getDestinations = function() {
-    // Don't return destinations if they're outdated.
-    if(!this.hasFreshDestinations()) return {};
-
-    // Do return them if they're not.
     return this.cache_data;
 }
 

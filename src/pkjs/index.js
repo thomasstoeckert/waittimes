@@ -393,14 +393,11 @@ Pebble.addEventListener('showConfiguration', function(e) {
     console.log("Destinations is currently fresh? " + hasFreshDestinations);
     console.log(destinations.cache_data);
 
-    if(hasFreshDestinations) {
-        launchClayWithDynamicConfig()
-    } else {
-        destinations.refreshCache(() => launchClayWithDynamicConfig());
-    }
+    // Mark destinations for a refresh
+    if(!hasFreshDestinations) destinations.refreshCache();
 
-    // Send that data to clay, and run it.
-    // Pebble.openURL(clay.generateUrl());
+    // Load anyway - default destinations data as a fallback
+    launchClayWithDynamicConfig();
 })
 
 Pebble.addEventListener('webviewclosed', function(e) {
