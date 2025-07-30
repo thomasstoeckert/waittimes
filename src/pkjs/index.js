@@ -449,9 +449,10 @@ Pebble.addEventListener('webviewclosed', function(e) {
             const lookup_data = lookup_values[i];
             const destination_name = lookup_data[2];
             let destination_index = desired_destination_names.indexOf(destination_name);
+            console.log("looking at " + destination_index + " in " + JSON.stringify(desired_destination_names) + " for " + destination_name);
             if(destination_index == -1) {
-                desired_destination_names.push(destination_name);
-                destination_index = desired_destination_names.length;
+                destination_index = desired_destination_names.push(destination_name) - 1;
+                console.log("couldn't find it. pushing, now " + JSON.stringify(desired_destination_names) + " and I think it's at " + destination_index);
             }
 
             desired_park_names.push(lookup_data[0]);
