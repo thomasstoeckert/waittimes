@@ -19,7 +19,6 @@
     "versionCode": 1,
     "enableMultiJS": true,
     "targetPlatforms": [
-      "aplite",
       "basalt",
       "chalk",
       "diorite"
