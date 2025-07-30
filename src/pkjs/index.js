@@ -418,11 +418,11 @@ Pebble.addEventListener('webviewclosed', function(e) {
     // Okay. We've baked in our data in the "pig" message tags. If we
     // strip the "pig_" part out of the keys, we can reverse-engineer which
     // of the parks the user wants...
-    const desired_park_names = [];
-    const desired_park_ids = [];
-    const desired_park_destination = [];
+    var desired_park_names = [];
+    var desired_park_ids = [];
+    var desired_park_destination = [];
 
-    const desired_destination_names = [];
+    var desired_destination_names = [];
     const inbound_keys = Object.keys(handled_response);
     inbound_keys.forEach((in_key) => {
         // Ignore things that don't contain our special tag
@@ -461,11 +461,28 @@ Pebble.addEventListener('webviewclosed', function(e) {
         }
     });
 
+    // Crop down the lists to, at most, 32 parks.
+    // This is per the limit on the messagekey.
+    var net_park_count = desired_park_names.length;
+    const max_park_count = 32;
+    if(net_park_count > max_park_count) {
+        desired_park_names = desired_park_names.slice(0, max_park_count);
+        desired_park_ids   = desired_park_ids.slice(0, max_park_count);
+        desired_park_destination = desired_park_destination.slice(0, max_park_count);
+
+        // TODO: Properly handle stripping back destination values
+        desired_destination_names = desired_destination_names.slice(0, max_park_count);
+
+        console.log("WARNING: Net park count of " + net_park_count + " was too long (longer than " + max_park_count + "). Trimming.");
+        
+        net_park_count = 32;
+    }
+
     filtered_response["c_newpark_names"]     = {"value": desired_park_names};
     filtered_response["c_newpark_ids"]       = {"value": desired_park_ids};
     filtered_response["c_newpark_destids"]   = {"value": desired_park_destination};
     filtered_response["c_newpark_destnames"] = {"value": desired_destination_names};
-    filtered_response["c_newpark_count"]     = {"value": desired_park_names.length};
+    filtered_response["c_newpark_count"]     = {"value": net_park_count};
 
     console.log(JSON.stringify(filtered_response));
 
