@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "destinations.h"
 
 static Window *s_parks_browse_window, *s_attraction_list_window, *s_message_window;
 static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
@@ -216,6 +217,17 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     s_message_code = 2;
     strcpy(s_message_text, "Connection Error");
     window_stack_push(s_message_window, true);
+  }
+
+  
+  Tuple *parkcount_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_count);
+  if(parkcount_tuple) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Received a PARKCOUNT Tuple");
+    int parkparse_result = parse_destinations_response(iter, context);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Got a result of %d", parkparse_result);
+    if(parkparse_result > 0) {
+      print_destinations();
+    }
   }
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_i_attractionCount);
