@@ -1,8 +1,9 @@
 #include <pebble.h>
 #include "destinations.h"
+#include "destinations_page.h"
 
-static Window *s_parks_browse_window, *s_attraction_list_window, *s_message_window;
-static MenuLayer *s_parks_menu_layer, *s_attractions_menu_layer;
+static Window *s_attraction_list_window, *s_message_window;
+static MenuLayer *s_attractions_menu_layer;
 static Layer *s_message_canvas_layer;
 
 static TextLayer *s_message_text_layer;
@@ -174,8 +175,7 @@ static void update_display()
     window_stack_push(s_message_window, true);
   }
 
-  menu_layer_set_selected_index(s_parks_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
-  menu_layer_reload_data(s_parks_menu_layer);
+  refresh_destinations_display();
 }
 
 static void load_settings()
@@ -383,92 +383,6 @@ static void send_park_request(int parkIndex)
   }
 }
 
-/*
- * --- Main Page / Park Select Interface ---
- *
- */
-/// The "onclick" functionality of the main menu layer. Essentially just
-/// issues the server request and opens the loading page.
-static void
-select_park_callback(struct MenuLayer *s_menu_layer, MenuIndex *cell_index,
-                     void *callback_context)
-{
-  int index = s_selected_parks_array[cell_index->row];
-
-  APP_LOG(APP_LOG_LEVEL_INFO, "Park %s has been clicked", park_array[index].name);
-
-  // Send the park load request
-  send_park_request(index);
-
-  // Push the loading window
-  // TODO: Loading window
-}
-
-/// A handler function that just returns the number of parks (fixed, but taken
-/// from the parks array)
-static uint16_t get_parks_row_count(struct MenuLayer *menulayer, uint16_t section_index, void *callback_context)
-{
-  return s_num_selected_parks;
-}
-
-/// This function is responsible for drawing each row of the parks page - namely
-/// the various titles and subtitles.
-static void draw_parks_row_handler(GContext *ctx, const Layer *cell_layer,
-                                   MenuIndex *cell_index, void *callback_context)
-{
-  // Get our index from the cell index
-  int index = cell_index->row;
-  // Translate that through the selected parks indexes
-  index = s_selected_parks_array[index];
-
-  // Get data for that park
-  const char *name = park_array[index].name;
-  int subtitleID = park_array[index].subtitleID;
-
-  const char *subtitle = NULL;
-  if (subtitleID != -1)
-  {
-    subtitle = park_groups[subtitleID];
-  }
-  menu_cell_basic_draw(ctx, cell_layer, name, subtitle, NULL);
-}
-
-/// This function establishes the main menu layer's properties and functionality
-static void parks_browse_load(Window *window)
-{
-  // Get the root layer / bounds for this window
-  Layer *window_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_bounds(window_layer);
-
-  // Create the menu layer, assign handlers,
-  s_parks_menu_layer = menu_layer_create(bounds);
-  menu_layer_set_callbacks(s_parks_menu_layer, NULL,
-                           (MenuLayerCallbacks){.get_num_rows = get_parks_row_count,
-                                                .draw_row = draw_parks_row_handler,
-                                                .select_click = select_park_callback});
-  // Bind the window's input functionality onto the menu
-  menu_layer_set_click_config_onto_window(s_parks_menu_layer, window);
-
-  // Stylize the main menu layer
-  menu_layer_set_highlight_colors(s_parks_menu_layer, GColorBulgarianRose, GColorWhite);
-
-  // Add the menu layer as a child of the main window
-  layer_add_child(window_layer, menu_layer_get_layer(s_parks_menu_layer));
-
-  // If there are no parks, show an error page
-  if (s_num_selected_parks == 0)
-  {
-    // Show the error page
-    s_message_code = 0;
-    strcpy(s_message_text, "No Parks Selected");
-    window_stack_push(s_message_window, true);
-  }
-}
-
-static void parks_browse_unload(Window *window)
-{
-  menu_layer_destroy(s_parks_menu_layer);
-}
 
 /*
  * --- Secondary Page / Attraction Browse Interface ---
@@ -613,12 +527,6 @@ static void init(void)
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received(inbox_received_callback);
 
-  // Create the main window (browse all parks)
-  s_parks_browse_window = window_create();
-  window_set_window_handlers(
-      s_parks_browse_window, (WindowHandlers){.load = parks_browse_load,
-                                              .unload = parks_browse_unload});
-
   // Create the subwindow (browse a parks attractions)
   s_attraction_list_window = window_create();
   window_set_window_handlers(
@@ -635,14 +543,12 @@ static void init(void)
   s_pdc_network = gdraw_command_image_create_with_resource(RESOURCE_ID_CHECK_INTERNET);
   s_pdc_generic = gdraw_command_image_create_with_resource(RESOURCE_ID_GENERIC_QUESTION);
 
-  // Push our main menu window onto the stack.
-  window_stack_push(s_parks_browse_window, false);
+  window_destinations_push();
 }
 
 static void deinit(void)
 {
   // Destroy the windows
-  window_destroy(s_parks_browse_window);
   window_destroy(s_attraction_list_window);
   window_destroy(s_message_window);
 }
