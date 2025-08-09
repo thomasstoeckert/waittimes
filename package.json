@@ -60,6 +60,12 @@
           "type": "raw",
           "name": "GENERIC_QUESTION",
           "file": "pdc/Pebble_80x80_Generic_question.pdc"
+        },
+        {
+          "type": "font",
+          "name": "CUSTOM_FONT_DROID_SERIF_24_BOLD",
+          "file": "font/DroidSerif-Bold.ttf",
+          "characterRegex": "[Welcom!]"
         }
       ]
     }

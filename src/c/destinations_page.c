@@ -15,6 +15,15 @@ void refresh_destinations_display()
     menu_layer_set_selected_index(s_destinations_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
     // Reload the data in the parks menu
     menu_layer_reload_data(s_destinations_menu_layer);
+
+    if(get_park_count() > 0)
+    {
+        window_no_parks_pop();
+    }
+    else
+    {
+        window_no_parks_push();
+    }
 }
 
 void select_destination_callback(struct MenuLayer *s_menu_layer, 
@@ -123,4 +132,13 @@ void window_destinations_push(void)
     }
 
     window_stack_push(s_destinations_browse_window, true);
+
+    if(get_park_count() > 0)
+    {
+        window_no_parks_pop();
+    }
+    else
+    {
+        window_no_parks_push();
+    }
 }
