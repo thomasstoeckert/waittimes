@@ -19,6 +19,7 @@
     "versionCode": 1,
     "enableMultiJS": true,
     "targetPlatforms": [
+      "aplite",
       "basalt",
       "chalk",
       "diorite",
@@ -34,7 +35,6 @@
       "i_attractionStatus[128]",
       "i_attractionCount",
       "i_connectionError",
-      "c_showParks[59]",
       "c_showEmpty",
       "c_showShowTimes",
       "c_showValidDataOnly",
