@@ -42,6 +42,7 @@
       "c_newpark_names[32]",
       "c_newpark_ids[32]",
       "c_newpark_destids[32]",
+      "c_newpark_destcount",
       "c_newpark_destnames[32]"
     ],
     "resources": {

@@ -28,6 +28,21 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
         return 0;
     }
 
+    // Collect the number of destinations we're about to recevei
+    Tuple *destcount_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_destcount);
+    if(!destcount_tuple) {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "[D.C]: Failed to find the destcount tuple. Returning.");
+        return 0;
+    }
+    
+    i_destination_count = destcount_tuple->value->int32;
+    APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Received word that we'll be seeing names for %d destinations", i_destination_count);
+    if(i_destination_count <= 0) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: That's <= Destinations. Proceeding no further.");
+        return 0;
+    }
+
+
     // Start collecting information for each park. Start by clearing the
     // existing data arrays.
     //
@@ -38,7 +53,6 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
     memset(i_park_destination, 0, sizeof(u_char) * I_MAX_PARKS);
 
     // Parse the data for our incoming parks
-    int i_max_destid = -1;
     for (int newpark_index = 0; newpark_index < i_park_count; newpark_index++)
     {
         Tuple *parkname_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_names   + newpark_index);
@@ -56,20 +70,13 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
         strncpy(s_park_ids[newpark_index], parkid_tuple->value->cstring, I_PARK_UUID_LENGTH - 1);
         i_park_destination[newpark_index] = destid_tuple->value->int32;
 
-        // Next, see if we don't have this destination index yet.
-        if(i_park_destination[newpark_index] > i_max_destid) {
-            // We don't have it! Mark down that we have at *least* the number of dest IDs
-            // for this park to exist.
-            i_max_destid = i_park_destination[newpark_index];
-        }
-
         // Log that we've parsed this bad boy.
         APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: {%2d}(%s)[%2d]%s", 
             newpark_index, s_park_ids[newpark_index], i_park_destination[newpark_index], s_park_names[newpark_index]);
     }
 
     // Now, we need to collect our destination information.
-    for (int destination_index = 0; destination_index <= i_max_destid; destination_index++) {
+    for (int destination_index = 0; destination_index < i_destination_count; destination_index++) {
         // This is easy - just the destination name
         Tuple *destname_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_destnames + destination_index);
         if(!destname_tuple) {
@@ -81,8 +88,6 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
         strncpy(s_destination_names[destination_index], destname_tuple->value->cstring, I_MAX_DESTINATION_NAME_LENGTH - 1);
         APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: D{%2d}%s", destination_index, s_destination_names[destination_index]);
     }
-    // Store our maximum destination count
-    i_destination_count = i_max_destid;
 
     // We've got it all!
     APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Finished parsing all destination information");

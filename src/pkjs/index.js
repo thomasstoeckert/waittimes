@@ -475,13 +475,16 @@ Pebble.addEventListener('webviewclosed', function(e) {
         net_park_count = 32;
     }
 
+    var net_dest_count = desired_park_destination.length;
+
     filtered_response["c_newpark_names"]     = {"value": desired_park_names};
     filtered_response["c_newpark_ids"]       = {"value": desired_park_ids};
     filtered_response["c_newpark_destids"]   = {"value": desired_park_destination};
     filtered_response["c_newpark_destnames"] = {"value": desired_destination_names};
     filtered_response["c_newpark_count"]     = {"value": net_park_count};
+    filtered_response["c_newpark_destcount"] = {"value": net_dest_count};
 
-    console.log(JSON.stringify(filtered_response));
+    // console.log(JSON.stringify(filtered_response));
 
     // This transforms the clay settings into stuff that the Pebble can handle
     // BUT! It also stores the data into localstorage.
