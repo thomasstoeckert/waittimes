@@ -200,6 +200,16 @@ void persist_save_destinations_data()
         }
     }
 
+    // If the dest count didn't divide evenly into sets of six dests, the last
+    // set of (1-5) won't have been stored. Store that.
+    if(i_destination_count % 6 != 0) 
+    {
+        int persist_key_offset = i_destination_count / 6;
+        persist_write_data(PERSIST_KEY_DESTINATIONS_BASE + persist_key_offset,
+            working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * 6);
+    }
+
+
     APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Stored %d Parks from %d Destinations into storage", i_park_count, i_destination_count);
 }
 
@@ -262,11 +272,11 @@ void persist_load_destinations_data()
             i_park_destination[park_idx] = working_park_persist[j].park_destid_persist;
             strncpy(s_park_names[park_idx], working_park_persist[j].park_name_persist, I_MAX_PARK_NAME_LENGTH - 1);
             strncpy(s_park_ids[park_idx], working_park_persist[j].park_uuid_persist, I_PARK_UUID_LENGTH - 1);
-            // APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a park! Here's its data: ");
-            // APP_LOG(APP_LOG_LEVEL_DEBUG, "  Index: %d", park_idx);
-            // APP_LOG(APP_LOG_LEVEL_DEBUG, "  DestIDX: %d", i_park_destination[park_idx]);
-            // APP_LOG(APP_LOG_LEVEL_DEBUG, "  Name: %s", s_park_names[park_idx]);
-            // APP_LOG(APP_LOG_LEVEL_DEBUG, "  Id: %s", s_park_ids[park_idx]);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a park! Here's its data: ");
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Index: %d", park_idx);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "  DestIDX: %d", i_park_destination[park_idx]);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Name: %s", s_park_names[park_idx]);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Id: %s", s_park_ids[park_idx]);
             park_idx += 1;
         }
     }
@@ -296,7 +306,11 @@ void persist_load_destinations_data()
         {
             strncpy(s_destination_names[dest_idx], working_destnames[j], 
                 I_MAX_DESTINATION_NAME_LENGTH - 1);
+            APP_LOG(APP_LOG_LEVEL_INFO, "Read a destination! Here's its data: ");
+            APP_LOG(APP_LOG_LEVEL_INFO, "  Index: %d", dest_idx);
+            APP_LOG(APP_LOG_LEVEL_INFO, "  Name: %s", s_destination_names[dest_idx]);
             dest_idx += 1;
+
         }
     }
 
