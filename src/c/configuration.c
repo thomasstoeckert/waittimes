@@ -11,7 +11,7 @@ void persist_clay_load_settings()
 {
     // Set default clay_settings. This allows for "upgrading" setting information
     // if things change.
-    persist_clay_default_settings()
+    persist_clay_default_settings();
     // Override default clay_settings with our saved data
     persist_read_data(SETTINGS_KEY, &clay_settings, sizeof(clay_settings));
 }
