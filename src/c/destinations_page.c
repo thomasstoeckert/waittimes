@@ -65,8 +65,7 @@ void draw_destination_row_handler(GContext *ctx, const Layer *cell_layer,
     if(index < 0 || index >= park_count)
     {
         APP_LOG(APP_LOG_LEVEL_WARNING, 
-            "[DP.H] An out of range menu index was asked to be drawn. Drawing nothing", 
-            index, park_count);
+            "[DP.H] An out of range menu index was asked to be drawn. Drawing nothing");
         return;
     }
 
