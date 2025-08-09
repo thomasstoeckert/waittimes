@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "configuration.h"
 #include "destinations.h"
 #include "destinations_page.h"
 
@@ -28,6 +29,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
       print_destinations();
     }
     refresh_destinations_display();
+    persist_save_destinations_data();
   }
 }
 
@@ -41,6 +43,9 @@ static void init(void)
   // Configure app message settings
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received(inbox_received_callback);
+
+  persist_clay_load_settings();
+  persist_load_destinations_data();
 
   window_destinations_push();
 }
