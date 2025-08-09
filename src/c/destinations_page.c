@@ -10,7 +10,9 @@ void destination_selected(int destination_idx)
 
 void refresh_destinations_display()
 {
-    // Set the index of the parks menu to zero
+    // Set the index of the parks menu to zero, so we're not selecting an
+    // invalid park index
+    menu_layer_set_selected_index(s_destinations_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
     // Reload the data in the parks menu
     menu_layer_reload_data(s_destinations_menu_layer);
 }
