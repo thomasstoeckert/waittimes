@@ -6,6 +6,8 @@
 #define COLOR_ACTIVE GColorBulgarianRose
 #define COLOR_INACTIVE GColorWhite
 
+#define DESTINATIONS_SERIAL_KEY_BASE 2
+
 void destination_selected(int destination_idx);
 void refresh_destinations_display();
 void select_destination_callback(struct MenuLayer *s_menu_layer, 
