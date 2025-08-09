@@ -94,7 +94,7 @@ void window_no_parks_push(void)
     window_stack_push(s_no_parks_window, true);
 }
 
-void window_no_parks_pop(void)
+void window_no_parks_remove(void)
 {
     window_stack_remove(s_no_parks_window, true);
 }

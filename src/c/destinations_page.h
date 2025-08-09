@@ -20,3 +20,4 @@ void page_destinations_unload(Window *window);
 void window_destinations_init(void);
 void window_destinations_deinit(void);
 void window_destinations_push(void);
+void window_destinations_remove(void);
