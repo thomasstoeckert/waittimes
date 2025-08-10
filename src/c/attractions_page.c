@@ -7,8 +7,13 @@ void refresh_attractions_display()
 {
     if(s_attractions_browse_window && s_attractions_menu_layer)
     {
-        menu_layer_set_index(s_attractions_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
+        menu_layer_set_selected_index(s_attractions_menu_layer, MenuIndex(0, 0), MenuRowAlignTop, false);
         menu_layer_reload_data(s_attractions_menu_layer);
+    }
+
+    if(get_attractions_count() > 0)
+    {
+        window_attractions_push();
     }
 }
 
@@ -53,7 +58,7 @@ void page_attractions_load(Window *window)
         {
            .get_num_rows = get_attractions_row_count,
            .draw_row     = draw_attraction_row_handler,
-           .select_click = select_attraction_callback
+           .select_click = select_attraction_row_callback
         });
     
     menu_layer_set_click_config_onto_window(s_attractions_menu_layer, window);
@@ -76,7 +81,7 @@ void window_attractions_init(void)
             .load = page_attractions_load,
             .unload = page_attractions_unload
         }
-    )
+    );
 }
 
 void window_attractions_deinit(void)

@@ -1,9 +1,10 @@
 #include <pebble.h>
 #include "configuration.h"
+#include "outbox.h"
 #include "destinations.h"
 #include "destinations_page.h"
-
-static bool s_js_ready = false;
+#include "attractions_data.h"
+#include "attractions_page.h"
 
 /*
  * --- App Communication / Messaging Functionality ---
@@ -17,7 +18,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
   Tuple *ready_tuple = dict_find(iter, MESSAGE_KEY__ready);
   if (ready_tuple)
   {
-    s_js_ready = true;
+    outbox_set_ready(true);
   }
   
   Tuple *parkcount_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_count);
@@ -30,6 +31,16 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     }
     refresh_destinations_display();
     persist_save_destinations_data();
+  }
+
+  Tuple *attractioncount_tuple = dict_find(iter, MESSAGE_KEY_i_attractionCount);
+  if(attractioncount_tuple)
+  {
+    int attractionparse_result = parse_attractions_response(iter, context);
+    if(attractionparse_result >= 0) {
+      print_attractions();
+    }
+    refresh_attractions_display();
   }
 }
 

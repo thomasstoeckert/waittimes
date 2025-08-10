@@ -4,7 +4,7 @@ static char s_attraction_names[I_MAX_ATTRACTIONS][I_MAX_ATTRACTION_NAME_LENGTH];
 static char s_attraction_status[I_MAX_ATTRACTIONS][I_MAX_ATTRACTION_STATUS_LENGTH];
 static int  s_num_attractions = 0;
 
-int parse_attractions_response(DictionaryIter *iter, void *context)
+int parse_attractions_response(DictionaryIterator *iter, void *context)
 {
     APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: Attractions Parsing Requested. Hunting for data.");
 
@@ -15,7 +15,7 @@ int parse_attractions_response(DictionaryIter *iter, void *context)
         return -1;
     }
 
-    s_num_attractions = atractioncount_tuple->value->int32;
+    s_num_attractions = attractioncount_tuple->value->int32;
     APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: Received word that we'll be seeing data for %d attractions.", s_num_attractions);
     
     // Clear existing data
@@ -23,7 +23,7 @@ int parse_attractions_response(DictionaryIter *iter, void *context)
     memset(s_attraction_status, 0, sizeof(char) * I_MAX_ATTRACTIONS * I_MAX_ATTRACTION_STATUS_LENGTH);
     
     if(s_num_attractions <= 0) {
-        APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: That's <= 0 attractions. Proceeding no further.")
+        APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: That's <= 0 attractions. Proceeding no further.");
         return 0;
     }
 
@@ -47,6 +47,8 @@ int parse_attractions_response(DictionaryIter *iter, void *context)
             s_attraction_names[i],
             s_attraction_status[i]);
     }
+
+    return 0;
 }
 
 void print_attractions()
@@ -73,7 +75,7 @@ int get_attraction_at_index(int index, AttractionData *attraction_data)
 {
     if(index < 0 || index >= s_num_attractions)
     {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "[A_D.C]: Was asked for attraction data for an invalid index (0 <= %d < %d failed)" index, s_num_attractions);
+        APP_LOG(APP_LOG_LEVEL_ERROR, "[A_D.C]: Was asked for attraction data for an invalid index (0 <= %d < %d failed)", index, s_num_attractions);
         return -1;
     }
 

@@ -6,6 +6,12 @@ static MenuLayer *s_destinations_menu_layer;
 void destination_selected(int destination_idx) 
 {
     // Issue request to the phone to get destination data
+    ParkData parkData;
+    get_data_for_park_index(destination_idx, &parkData);
+
+    outbox_send_attractions_request(parkData.park_uuid);
+
+    // Tell our status page that we've asked for attraction data
 }
 
 void refresh_destinations_display()

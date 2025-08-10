@@ -13,7 +13,7 @@ typedef struct {
 
 #define AttractionData(name, status) ((AttractionData){(name), (status)});
 
-int parse_attractions_response(DictionaryIter *iter, void *context);
+int parse_attractions_response(DictionaryIterator *iter, void *context);
 
 void print_attractions();
 
