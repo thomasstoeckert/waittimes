@@ -5,8 +5,8 @@ static char s_park_names[I_MAX_PARKS][I_MAX_PARK_NAME_LENGTH];
 static char s_park_ids[I_MAX_PARKS][I_PARK_UUID_LENGTH];
 static char s_destination_names[I_MAX_DESTINATIONS][I_MAX_DESTINATION_NAME_LENGTH];
 static int i_park_destination[I_MAX_PARKS];
-static int i_park_count;
-static int i_destination_count;
+static int i_park_count        = 0;
+static int i_destination_count = 0;
 
 int parse_destinations_response(DictionaryIterator *iter, void *context){
     // We've been called. We need to look for a message with our new park count
@@ -22,6 +22,16 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
 
     // Collect the number of parks we're to receive
     i_park_count = parkcount_tuple->value->int32;
+
+    // Start collecting information for each park. Start by clearing the
+    // existing data arrays.
+    //
+    // Probably unecessary. But! Doing it anyway.
+    memset(s_park_names, 0, sizeof(char) * I_MAX_PARKS * I_MAX_PARK_NAME_LENGTH);
+    memset(s_park_ids, 0, sizeof(char) * I_MAX_PARKS * I_PARK_UUID_LENGTH);
+    memset(s_destination_names, 0, sizeof(char) * I_MAX_DESTINATIONS * I_MAX_DESTINATION_NAME_LENGTH);
+    memset(i_park_destination, 0, sizeof(u_char) * I_MAX_PARKS);
+
     APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Received word that we'll be seeing data for %d parks", i_park_count);
     if(i_park_count <= 0) {
         APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: That's <= 0 parks. Proceeding no further.");
@@ -43,14 +53,7 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
     }
 
 
-    // Start collecting information for each park. Start by clearing the
-    // existing data arrays.
-    //
-    // Probably unecessary. But! Doing it anyway.
-    memset(s_park_names, 0, sizeof(char) * I_MAX_PARKS * I_MAX_PARK_NAME_LENGTH);
-    memset(s_park_ids, 0, sizeof(char) * I_MAX_PARKS * I_PARK_UUID_LENGTH);
-    memset(s_destination_names, 0, sizeof(char) * I_MAX_DESTINATIONS * I_MAX_DESTINATION_NAME_LENGTH);
-    memset(i_park_destination, 0, sizeof(u_char) * I_MAX_PARKS);
+
 
     // Parse the data for our incoming parks
     for (int newpark_index = 0; newpark_index < i_park_count; newpark_index++)
