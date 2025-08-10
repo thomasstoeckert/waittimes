@@ -103,8 +103,6 @@ void page_destinations_load(Window *window)
 
     // Something
     layer_add_child(window_layer, menu_layer_get_layer(s_destinations_menu_layer));
-
-    // Show error message for no parks IG.
 }
 
 void page_destinations_unload(Window *window)
