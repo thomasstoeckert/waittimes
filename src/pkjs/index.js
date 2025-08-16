@@ -381,7 +381,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
         net_park_count = 32;
     }
 
-    var net_dest_count = desired_park_destination.length;
+    var net_dest_count = desired_destination_names.length;
 
     filtered_response["c_newpark_names"]     = {"value": desired_park_names};
     filtered_response["c_newpark_ids"]       = {"value": desired_park_ids};
