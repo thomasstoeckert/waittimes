@@ -290,7 +290,19 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         if(a_has_shows) return -1;
         if(b_has_shows) return 1;
 
-        // Neither shows, bgs, or waittimes. Sort by name
+        // Neither shows, bgs, or waittimes. Sort by status
+        const status_priorities = {
+            "OPERATING": -10,
+            "DOWN": -5,
+            "CLOSED": -1,
+            "REFURBISHMENT": 0
+        }
+        if(a["status"] != b["status"])
+        {
+            return status_priorities[a["status"]] - status_priorities[b["status"]];
+        }
+
+        // All else has failed. Sort by name
         return a["name"].localeCompare(b["name"]);
     }
 
