@@ -2,6 +2,7 @@
 
 #include <pebble.h>
 #include "attractions_data.h"
+#include "no_attractions_page.h"
 
 #define COLOR_AP_ACTIVE GColorBulgarianRose
 #define COLOR_AP_INACTIVE GColorWhite

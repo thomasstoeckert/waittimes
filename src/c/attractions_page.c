@@ -14,6 +14,12 @@ void refresh_attractions_display()
     if(get_attractions_count() > 0)
     {
         window_attractions_push();
+        window_no_attractions_remove();
+    }
+    else
+    {
+        window_attractions_remove();
+        window_no_attractions_push();
     }
 }
 
@@ -96,7 +102,15 @@ void window_attractions_push(void)
         window_attractions_init();
     }
 
-    window_stack_push(s_attractions_browse_window, true);
+    if(get_attractions_count() > 0)
+    {
+        window_no_attractions_remove();
+        window_stack_push(s_attractions_browse_window, true);
+    } else 
+    {
+        window_no_attractions_push();
+    }
+
 }
 
 void window_attractions_remove(void)
