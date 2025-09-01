@@ -14,8 +14,8 @@ module.exports = [
                 "type": "checkboxgroup",
                 "messageKey": "c_typeVisibility",
                 "label": "Visible Venue Types",
-                "defaultValue": [true, true],
-                "options": ["Attractions", "Shows"]
+                "defaultValue": [true, true, false],
+                "options": ["Attractions", "Shows", "Restaurant"]
             },
             {
                 "type": "toggle",

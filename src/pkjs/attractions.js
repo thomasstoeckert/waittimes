@@ -152,6 +152,9 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         if(clean_venue["type"] == "SHOW" && 
             !settings["c_typeVisibility"][1]) return;
         
+        if(clean_venue["type"] == "RESTAURANT" &&
+            !settings["c_typeVisibility"][2]) return;
+        
         // If it has no wait times...
         if(clean_venue["standby_wait"] == null &&
             // And no upcoming showtimes
