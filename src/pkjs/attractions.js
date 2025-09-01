@@ -389,7 +389,8 @@ AttractionsAPI.prototype.generateAttractionDataPackage = function(clean_sorted_d
                 if(remaining_shows > 0) status_string += " + " + remaining_shows + " more";
             }
         } else {
-            status_string = venue_data["status"];
+            // Title case status strings!
+            status_string = venue_data["status"].charAt(0).toUpperCase() + venue_data["status"].slice(1).toLowerCase();
         }
         
         // Pack the attraction name into the payload.
