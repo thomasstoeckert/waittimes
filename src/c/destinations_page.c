@@ -25,6 +25,11 @@ void refresh_destinations_display()
         menu_layer_reload_data(s_destinations_menu_layer);
     }
 
+    // Get rid of the attractions display, no matter what.
+    // This prevents the weird scenario where an attractions page sticks around
+    // after a config update.
+    window_attractions_remove();
+
     if(get_park_count() > 0)
     {
         window_destinations_push();
