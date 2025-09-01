@@ -95,19 +95,34 @@ AttractionsAPI.prototype.reformatRawAttractionData = function(live_data) {
         if("showtimes" in raw_attraction) {
             const now = Date.now();
             const raw_showtimes = raw_attraction.showtimes;
+            const processed_showtimes = [];
             raw_showtimes.forEach(raw_showtime => {
                 // See if this showtime has started
-                const show_startime = raw_showtime.startTime;
-                const show_endtime = raw_showtime.endTime;
+                const show_startime = new Date(raw_showtime.startTime);
+                const show_endtime = new Date(raw_showtime.endTime);
 
                 // If the show's already ended, return
                 if(now > show_endtime) return;
                 
                 // Otherwise, use it.
-                clean_attraction["next_showtimes"].push([
+                processed_showtimes.push([
                     show_startime, show_endtime
                 ]);
             });
+            // We only want to hold on to "in-progress" shows 
+            // if it's the last one of the bunch. Otherwise, it's
+            // confusing.
+            //
+            // So, if we have more than one upcoming showtime,
+            // we check the first one in the list to see if it's
+            // already started. If it has, we remove it.
+            if(processed_showtimes.length > 1)
+            {
+                const first_showtime = processed_showtimes[0][0];
+                if(first_showtime < now)
+                    processed_showtimes.shift()
+            }
+            clean_attraction["next_showtimes"] = processed_showtimes;
         }
 
         // Boarding Groups! Grab the first/last that are currently able to be
@@ -184,15 +199,16 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
 
         // If we have a wait, that one wins by default
         if(a["standby_wait"] == null)
-            return -1;
+            return 1;
 
         if(b["standby_wait"] == null)
-            return 1;
+            return -1;
 
         // Otherwise, actually compare wait times
         return (a["standby_wait"] - b["standby_wait"]) * flip;
     }
 
+    const now = Date.now();
     function sort_shows (a, b, flip) {
         const a_has_shows = (a["next_showtimes"].length > 0);
         const b_has_shows = (b["next_showtimes"].length > 0);
@@ -202,14 +218,21 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
 
         // If a venue doesn't have shows, the other wins by default
         if(!a_has_shows)
-            return -1;
-
-        if(!b_has_shows)
             return 1;
 
+        if(!b_has_shows)
+            return -1;
+
         // Actually comapre showtimes
-        const a_start = a["next_showtimes"][0];
-        const b_start = b["next_showtimes"][0];
+        var a_start = a["next_showtimes"][0][0];
+        var b_start = b["next_showtimes"][0][0];
+
+        if(a_start < now)
+            // Use a_end instead
+            a_start = a["next_showtimes"][0][1];
+        if(b_start < now)
+            b_start = b["next_showtimes"][0][1];
+
         return (a_start - b_start) * flip;
     }
 
@@ -260,7 +283,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
                 return a["name"].localeCompare(b["name"]);
 
             // Otherwise, sort showtimes
-            return (a["next_showtimes"][0] - b["next_showtimes"][0]);
+            return (b["next_showtimes"][0][0] - a["next_showtimes"][0][0]);
         }
 
         // If one has a show, but the other doesn't
@@ -339,18 +362,18 @@ AttractionsAPI.prototype.generateAttractionDataPackage = function(clean_sorted_d
             status_string = "Groups " + boarding_groups[0] + "-" + boarding_groups[1];
         } else if (showtimes.length > 0)
         {
+            const now = Date.now();
             const next_show = showtimes[0];
             const remaining_shows = showtimes.length - 1;
-            const now = Date.now();
             // If there aren't any more shows after this one, and it's already started,
             // report its end time
             if(remaining_shows == 0 && (now > next_show[0]))
             {
-                status_string = "Ends " + (new Date(next_show[1])).toLocaleTimeString('default', {timeStyle: 'short'});
+                status_string = "Ends " + next_show[1].toLocaleTimeString('default', {timeStyle: 'short'});
             } else 
             {
                 // Report the start time of the next show
-                status_string = (new Date(next_show[0])).toLocaleTimeString('default', {timeStyle:'short'})
+                status_string = next_show[0].toLocaleTimeString('default', {timeStyle:'short'})
                 if(remaining_shows > 0) status_string += " + " + remaining_shows + " more";
             }
         } else {
