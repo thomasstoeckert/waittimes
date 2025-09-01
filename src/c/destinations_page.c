@@ -130,6 +130,7 @@ void window_destinations_init(void)
 void window_destinations_deinit(void)
 {
     window_destroy(s_destinations_browse_window);
+    window_no_parks_deinit();
 }
 
 void window_destinations_push(void)

@@ -63,6 +63,8 @@ static void init(void)
 
 static void deinit(void)
 {
+  window_attractions_deinit();
+  window_destinations_deinit();
 }
 
 int main(void)
