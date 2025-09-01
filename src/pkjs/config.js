@@ -12,7 +12,7 @@ module.exports = [
             },
             {
                 "type": "checkboxgroup",
-                "messageKey": "c_typeVisiblity",
+                "messageKey": "c_typeVisibility",
                 "label": "Visible Venue Types",
                 "defaultValue": [true, true],
                 "options": ["Attractions", "Shows"]
@@ -28,8 +28,12 @@ module.exports = [
                 "type": "radiogroup",
                 "messageKey": "c_sortOrder",
                 "label": "Venue Sort Order",
-                "defaultValue": "wait_decrease",
+                "defaultValue": "sort_smart",
                 "options": [
+                    {
+                        "label": "Smart Sort",
+                        "value": "sort_smart"
+                    },
                     {
                         "label": "A->Z",
                         "value": "alpha_increase"

@@ -3,187 +3,38 @@ var Clay = require('pebble-clay');
 var clayConfig = require('./config');
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
-const API_BASE_URL = "https://api.themeparks.wiki/v1/entity/";
+const AttractionsAPI = require('./attractions');
+const attractions = new AttractionsAPI();
 
-function formatAttractionData(attraction, showShowTimes, showValidDataOnly) {
-    // If it's not an attraction or a show, return
-    if (!(attraction.entityType == "ATTRACTION" ||
-        (attraction.entityType == "SHOW" && showShowTimes))) return;
-
-    attractionResult = [
-        attraction.name,
-        attraction.status || ""
-    ];
-
-    var hasValidData = false;
-
-    // If it is a show, get the next showtime and localize it
-    if (attraction.entityType == "SHOW") {
-        const showtimeData = attraction.showtimes;
-        if (showtimeData != undefined) {
-            var currentShow = null;
-            var nextShow = null;
-            var showsLeft = showtimeData.length;
-            
-            const now = new Date();
-
-            const numShows = showtimeData.length;
-            for (var i = 0; i < numShows; i++) {
-                const show = showtimeData[i];
-                const startTimeParsed = new Date(show.startTime);
-                const endTimeParsed = new Date(show.endTime);
-
-                // Decrement the amount of shows left in the day, minus one
-                showsLeft--;
-
-                if(now < startTimeParsed) {
-                    // This show starts after now. It is our next show.
-                    nextShow = show;
-                    break;
-                }
-
-                if(now >= startTimeParsed &&  now < endTimeParsed) {
-                    // This show has started, but ends later. It is our
-                    // current show.
-                    currentShow = show;
-                }
-            }
-
-            if(!nextShow && !currentShow) {
-                // No show running, no more today
-                // Display text
-                attractionResult[1] = "No More Shows";
-            } else if (!nextShow && currentShow) {
-                // Show running, no more today
-                // Display end time of this show
-                attractionResult[1] = "Ends " + (new Date(currentShow.endTime)).toLocaleTimeString('default', {timeStyle: 'short'});
-                hasValidData = true;
-            } else if (nextShow) {
-                // More shows later. 
-                // Display start time of the next show
-                attractionResult[1] = (new Date(nextShow.startTime)).toLocaleTimeString('default', {timeStyle:'short'});
-                if(showsLeft > 1) attractionResult[1] += " + " + showsLeft.toString() + " more";
-                hasValidData = true;
-            }
-        }
-    } else if (attraction.queue != undefined) {
-        // It is an attraction. Do our attraction things.
-        const queueData = attraction.queue;
-
-        // If there's virtual line / boarding group data, display that first
-        var hasQueueData = false;
-
-        if(queueData.BOARDING_GROUP != undefined) {
-            const bgData = queueData.BOARDING_GROUP;
-            if(bgData.currentGroupStart != null && bgData.currentGroupEnd != null) {
-                attractionResult[1] = "Groups " + bgData.currentGroupStart.toString() + "-" + bgData.currentGroupEnd.toString();
-                hasQueueData = true;
-            }
-        }
-
-        if(!hasQueueData && queueData.STANDBY != null && queueData.STANDBY.waitTime != null) {
-            // If there be no standby data, try to throw the status up there
-            const standbyData = queueData.STANDBY;
-            var waitString = standbyData.waitTime.toString() + " minute";
-            if (standbyData.waitTime != 1) {
-                // Pluralize it!
-                waitString += "s";
-            }
-            hasValidData = true;
-            attractionResult[1] = waitString;
-            hasValidData = true;
-        }
-    }
-    if(!hasValidData && !showValidDataOnly) return;
-    return attractionResult;
-}
-
-function returnParkWaitTimes(attrTimesObject, showShowTimes, showValidDataOnly) {
-    // Watch communication expects attraction names, wait times, and their 
-    // status (string)
-    // We only want entries of the type ATTRACTION and with "active" true
-    // We also want to sort everything alphabetically by attraction name, too.
+function handleWaitTimeResponse(response_data)
+{
+    const structured_data = attractions.reformatRawAttractionData(response_data);
+    console.log("-------- RAW DATA -----------")
+    console.log("\n" + JSON.stringify(structured_data) + "\n");
+    // Get our settings from Clay
+    const clay_data = JSON.parse(localStorage.getItem('clay-settings'));
+    const sorted_and_filtered_data = attractions.sortAndFilterCleanAttractionData(structured_data, clay_data);
     
-    // Sort the objects by the "name" key
-    console.log("Beginning to prepare wait times for return to pebble");
-    var liveData = attrTimesObject.liveData;
-    console.log("Collected live data. Sorting " + liveData.length + " attractions");
-    var counter = 0;
-    liveData.forEach(function (attraction) {
-        console.log(counter + ": " + attraction.name);
-        counter += 1;
-    });
-    
-    liveData.sort(function (a, b) { 
-        return a.name.toString().localeCompare(b.name.toString()); 
-    })
+    console.log("-------- SORTED AND FILTERED DATA -----------")
+    console.log("\n" + JSON.stringify(sorted_and_filtered_data) + "\n");
 
-    console.log("Sorted livedata by name. Moving on")
+    const data_package = attractions.generateAttractionDataPackage(sorted_and_filtered_data);
 
-    // Build the list of attraction names
-    var payloadNames = [];
-    // Build the list of attraction statuses
-    var payloadStatuses = [];
+    console.log("-------- Packaged Data -----------")
+    console.log("\n" + JSON.stringify(data_package) + "\n");
 
-    liveData.forEach(function (attraction) {
-        console.log("Formatting data for " + attraction.name);
-        result = formatAttractionData(attraction, showShowTimes, showValidDataOnly);
-        if(result != null) {
-            payloadNames.push(result[0]);
-            payloadStatuses.push(result[1]);
-        }
-    });
-
-    // Our lists have been created. Time to create the payload object
-    var payloadDict = {};
-    for (var i = 0; i < payloadNames.length; i++) {
-        payloadDict[keys.i_attractionNameString + i] = payloadNames[i];
-        payloadDict[keys.i_attractionStatus + i] = payloadStatuses[i];
-    }
-
-    payloadDict[keys.i_attractionCount] = payloadNames.length;
-
-    // Send it.
-    Pebble.sendAppMessage(payloadDict, function () {
-        console.log('Message sent successfully');
+    Pebble.sendAppMessage(data_package, function () {
+        console.log("HWTR Message sent successfully");
     }, function (e) {
-        console.log('Message failed: ' + JSON.stringify(e));
-    });
+        console.log('HWTR Message Failed: ' + JSON.stringify(e));
+    })
 }
 
-function getParkWaitTimes(parkID, showShowTimes, showValidDataOnly) {
-    var method = 'GET';
-    var url = API_BASE_URL + parkID + "/live";
-
-    var request = new XMLHttpRequest();
-
-    request.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // Parse the response
-            try {
-                var response = JSON.parse(this.responseText);
-                console.log("Got a wait times response with " + Object.keys(response).length + " entries");
-                returnParkWaitTimes(response, showShowTimes, showValidDataOnly);
-            } catch (e) {
-                console.log("Error parsing wait times response: " + e.name + " > " + e.message);
-                console.log(e.stack);
-            }
-        }
-    }
-
-    request.onerror = function () {
-        // Something wrong happened.
-        var errorPayload = {};
-        errorPayload[keys.i_connectionError] = 1;
-        Pebble.sendAppMessage(errorPayload, function () {
-            console.log("Error message sent to client");
-        }, function (e) {
-            console.log('Message failed: ' + JSON.stringify(e));
-        });
-    }
-
-    request.open(method, url);
-    request.send();
+function fireWaitTimesRequest(park_id) {
+    console.log(JSON.stringify(attractions));
+    console.log(attractions);
+    console.log(JSON.stringify(AttractionsAPI));
+    attractions.fetchRawAttractionsForPark(park_id, handleWaitTimeResponse);
 }
 
 function fixMissingNumbers(dict) {
@@ -333,7 +184,9 @@ Pebble.addEventListener('webviewclosed', function(e) {
         filtered_response[in_key] = handled_response[in_key];
 
         if(!(in_key.includes("pig_"))) {
+            // If the key isn't a pig key, pass it on and continue
             filtered_response[in_key] = handled_response[in_key];
+            return
         }
 
         const inbound_value = handled_response[in_key]["value"];
@@ -421,6 +274,6 @@ Pebble.addEventListener('appmessage', function (e) {
     if (data[keys.o_parkID] !== undefined) {
         // It is! We need to get that information from the server
         console.log("Got a request to get the data for parkID " + data[keys.o_parkID]);
-        getParkWaitTimes(data[keys.o_parkID], true, false);
+        fireWaitTimesRequest(data[keys.o_parkID]);
     }
 });
