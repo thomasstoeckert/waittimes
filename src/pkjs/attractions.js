@@ -283,7 +283,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
                 return a["name"].localeCompare(b["name"]);
 
             // Otherwise, sort showtimes
-            return (b["next_showtimes"][0][0] - a["next_showtimes"][0][0]);
+            return (a["next_showtimes"][0][0] - b["next_showtimes"][0][0]);
         }
 
         // If one has a show, but the other doesn't
