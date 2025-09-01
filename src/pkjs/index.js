@@ -9,19 +9,19 @@ const attractions = new AttractionsAPI();
 function handleWaitTimeResponse(response_data)
 {
     const structured_data = attractions.reformatRawAttractionData(response_data);
-    console.log("-------- RAW DATA -----------")
-    console.log("\n" + JSON.stringify(structured_data) + "\n");
+    // console.log("-------- RAW DATA -----------")
+    // console.log("\n" + JSON.stringify(structured_data) + "\n");
     // Get our settings from Clay
     const clay_data = JSON.parse(localStorage.getItem('clay-settings'));
     const sorted_and_filtered_data = attractions.sortAndFilterCleanAttractionData(structured_data, clay_data);
     
-    console.log("-------- SORTED AND FILTERED DATA -----------")
-    console.log("\n" + JSON.stringify(sorted_and_filtered_data) + "\n");
+    // console.log("-------- SORTED AND FILTERED DATA -----------")
+    // console.log("\n" + JSON.stringify(sorted_and_filtered_data) + "\n");
 
     const data_package = attractions.generateAttractionDataPackage(sorted_and_filtered_data);
 
-    console.log("-------- Packaged Data -----------")
-    console.log("\n" + JSON.stringify(data_package) + "\n");
+    // console.log("-------- Packaged Data -----------")
+    // console.log("\n" + JSON.stringify(data_package) + "\n");
 
     Pebble.sendAppMessage(data_package, function () {
         console.log("HWTR Message sent successfully");
