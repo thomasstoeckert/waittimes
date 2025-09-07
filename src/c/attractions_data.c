@@ -43,9 +43,10 @@ int parse_attractions_response(DictionaryIterator *iter, void *context)
         strncpy(s_attraction_names[i],  name_tuple->value->cstring, I_MAX_ATTRACTION_NAME_LENGTH - 1);
         strncpy(s_attraction_status[i], status_tuple->value->cstring, I_MAX_ATTRACTION_STATUS_LENGTH - 1);
 
-        APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: {%3d}(%s)%s", i, 
-            s_attraction_names[i],
-            s_attraction_status[i]);
+        if(PWT_ATTRS_DEBUG)
+            APP_LOG(APP_LOG_LEVEL_INFO, "[A_D.C]: {%3d}(%s)%s", i, 
+                s_attraction_names[i],
+                s_attraction_status[i]);
     }
 
     return 0;

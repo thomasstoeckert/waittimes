@@ -1,11 +1,4 @@
-#include <pebble.h>
-#include "style.h"
-#include "configuration.h"
-#include "outbox.h"
-#include "destinations.h"
-#include "destinations_page.h"
-#include "attractions_data.h"
-#include "attractions_page.h"
+#include "waittimes.h"
 
 /*
  * --- App Communication / Messaging Functionality ---
@@ -27,7 +20,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
     APP_LOG(APP_LOG_LEVEL_INFO, "Received a PARKCOUNT Tuple");
     int parkparse_result = parse_destinations_response(iter, context);
     APP_LOG(APP_LOG_LEVEL_INFO, "Got a result of %d", parkparse_result);
-    if(parkparse_result > 0) {
+    if(parkparse_result > 0 && PWT_DEBUG) {
       print_destinations();
     }
     refresh_destinations_display();
@@ -38,7 +31,7 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
   if(attractioncount_tuple)
   {
     int attractionparse_result = parse_attractions_response(iter, context);
-    if(attractionparse_result >= 0) {
+    if(attractionparse_result >= 0 && PWT_DEBUG) {
       print_attractions();
     }
     refresh_attractions_display();

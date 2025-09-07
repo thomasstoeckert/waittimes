@@ -15,6 +15,8 @@
 #define PERSIST_KEY_PARKS_BASE 5
 #define PERSIST_KEY_DESTINATIONS_BASE PERSIST_KEY_PARKS_BASE + 8
 
+#define PWT_DEST_DEBUG false
+
 typedef struct {
     char * park_name;
     char * park_uuid;

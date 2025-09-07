@@ -1,6 +1,5 @@
 #include "style.h"
 
-
 GFont pwt_title_font;
 GFont pwt_body_font;
 

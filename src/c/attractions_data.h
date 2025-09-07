@@ -6,6 +6,8 @@
 #define I_MAX_ATTRACTION_NAME_LENGTH 20
 #define I_MAX_ATTRACTION_STATUS_LENGTH 20
 
+#define PWT_ATTRS_DEBUG false
+
 typedef struct {
     char * attraction_name;
     char * attraction_status;

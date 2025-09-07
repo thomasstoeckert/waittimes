@@ -74,8 +74,9 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
         i_park_destination[newpark_index] = destid_tuple->value->int32;
 
         // Log that we've parsed this bad boy.
-        APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: {%2d}(%s)[%2d]%s", 
-            newpark_index, s_park_ids[newpark_index], i_park_destination[newpark_index], s_park_names[newpark_index]);
+        if(PWT_DEST_DEBUG)
+            APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: {%2d}(%s)[%2d]%s", 
+                newpark_index, s_park_ids[newpark_index], i_park_destination[newpark_index], s_park_names[newpark_index]);
     }
 
     // Now, we need to collect our destination information.
@@ -89,7 +90,8 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
 
         // We got it!
         strncpy(s_destination_names[destination_index], destname_tuple->value->cstring, I_MAX_DESTINATION_NAME_LENGTH - 1);
-        APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: D{%2d}%s", destination_index, s_destination_names[destination_index]);
+        if(PWT_DEST_DEBUG)
+            APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: D{%2d}%s", destination_index, s_destination_names[destination_index]);
     }
 
     // We've got it all!
@@ -275,11 +277,14 @@ void persist_load_destinations_data()
             i_park_destination[park_idx] = working_park_persist[j].park_destid_persist;
             strncpy(s_park_names[park_idx], working_park_persist[j].park_name_persist, I_MAX_PARK_NAME_LENGTH - 1);
             strncpy(s_park_ids[park_idx], working_park_persist[j].park_uuid_persist, I_PARK_UUID_LENGTH - 1);
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a park! Here's its data: ");
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Index: %d", park_idx);
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "  DestIDX: %d", i_park_destination[park_idx]);
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Name: %s", s_park_names[park_idx]);
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "  Id: %s", s_park_ids[park_idx]);
+            if(PWT_DEST_DEBUG)
+            {
+                APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a park! Here's its data: ");
+                APP_LOG(APP_LOG_LEVEL_DEBUG, "  Index: %d", park_idx);
+                APP_LOG(APP_LOG_LEVEL_DEBUG, "  DestIDX: %d", i_park_destination[park_idx]);
+                APP_LOG(APP_LOG_LEVEL_DEBUG, "  Name: %s", s_park_names[park_idx]);
+                APP_LOG(APP_LOG_LEVEL_DEBUG, "  Id: %s", s_park_ids[park_idx]);
+            }
             park_idx += 1;
         }
     }
@@ -309,9 +314,12 @@ void persist_load_destinations_data()
         {
             strncpy(s_destination_names[dest_idx], working_destnames[j], 
                 I_MAX_DESTINATION_NAME_LENGTH - 1);
-            APP_LOG(APP_LOG_LEVEL_INFO, "Read a destination! Here's its data: ");
-            APP_LOG(APP_LOG_LEVEL_INFO, "  Index: %d", dest_idx);
-            APP_LOG(APP_LOG_LEVEL_INFO, "  Name: %s", s_destination_names[dest_idx]);
+            if(PWT_DEST_DEBUG)
+            {
+                APP_LOG(APP_LOG_LEVEL_INFO, "Read a destination! Here's its data: ");
+                APP_LOG(APP_LOG_LEVEL_INFO, "  Index: %d", dest_idx);
+                APP_LOG(APP_LOG_LEVEL_INFO, "  Name: %s", s_destination_names[dest_idx]);
+            }
             dest_idx += 1;
 
         }
