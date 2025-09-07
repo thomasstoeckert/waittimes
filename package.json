@@ -64,9 +64,13 @@
         },
         {
           "type": "font",
-          "name": "CUSTOM_FONT_DROID_SERIF_24_BOLD",
-          "file": "font/DroidSerif-Bold.ttf",
-          "characterRegex": "[Welcom!Zz.]"
+          "name": "CUSTOM_FONT_JERSEY_SOLID_18",
+          "file": "font/Jersey10-Regular.ttf"
+        },
+        {
+          "type": "font",
+          "name": "CUSTOM_FONT_JERSEY_B_36",
+          "file": "font/Jersey25-Regular.ttf"
         }
       ]
     }

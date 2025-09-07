@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "style.h"
 #include "configuration.h"
 #include "outbox.h"
 #include "destinations.h"
@@ -54,6 +55,8 @@ static void init(void)
   // Configure app message settings
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_register_inbox_received(inbox_received_callback);
+
+  init_fonts();
 
   persist_clay_load_settings();
   persist_load_destinations_data();

@@ -1,10 +1,7 @@
 #pragma once
 
 #include <pebble.h>
-
-#define COLOR_NOPARKS_BG GColorBulgarianRose
-
-#define NOPARKS_MARGIN 8
+#include "style.h"
 
 void window_no_parks_init(void);
 void window_no_parks_deinit(void);
