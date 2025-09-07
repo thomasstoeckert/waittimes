@@ -11,7 +11,7 @@ typedef struct ClaySettings
     bool show_valid_data_only;
 } ClaySettings;
 
-ClaySettings clay_settings;
+extern ClaySettings clay_settings;
 
 void persist_clay_default_settings();
 void persist_clay_load_settings();

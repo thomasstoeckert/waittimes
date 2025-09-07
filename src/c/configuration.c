@@ -1,5 +1,7 @@
 #include "configuration.h"
 
+ClaySettings clay_settings;
+
 void persist_clay_default_settings()
 {
     clay_settings.show_empty = false;
