@@ -8,28 +8,57 @@ module.exports = [
         "items": [
             {
                 "type": "heading",
-                "defaultValue": "Visibility"
+                "defaultValue": "Venue Display Settings"
+            },
+            {
+                "type": "checkboxgroup",
+                "messageKey": "c_typeVisibility",
+                "label": "Visible Venue Types",
+                "defaultValue": [true, true, false],
+                "options": ["Attractions", "Shows", "Restaurant"]
             },
             {
                 "type": "toggle",
-                "messageKey": "c_showEmpty",
-                "label": "Show Empty Waits",
-                "defaultValue": false,
-                "description": "If true, the watchapp will show attractions with no posted wait or status. If false, it will hide these."
-            },
-            {
-                "type": "toggle",
-                "messageKey": "c_showValidDataOnly",
-                "label": "Show Valid Data Only",
-                "defaultValue": false,
-                "description": "If true, the watchapp will show entries only when there exists valid data (wait time, showtime, or boarding group)"
-            },
-            {
-                "type": "toggle",
-                "messageKey": "c_showShowtimes",
-                "label": "Show Showtimes",
+                "messageKey": "c_hideClosed",
+                "label": "Hide Closed Venues",
                 "defaultValue": true,
-                "description": "If true, show in-park shows and their next upcoming showtime, if available"
+                "description": "If checked, venues who are completely closed will be hidden. Venues who are reporting a 'down' or 'delayed' status will continue to be displayed."
+            },
+            {
+                "type": "radiogroup",
+                "messageKey": "c_sortOrder",
+                "label": "Venue Sort Order",
+                "defaultValue": "sort_smart",
+                "options": [
+                    {
+                        "label": "Smart Sort",
+                        "value": "sort_smart"
+                    },
+                    {
+                        "label": "A->Z",
+                        "value": "alpha_increase"
+                    },
+                    {
+                        "label": "Z->A",
+                        "value": "alpha_decrease"
+                    },
+                    {
+                        "label": "Shortest Waits First",
+                        "value": "wait_increase",
+                    },
+                    {
+                        "label": "Longest Waits First",
+                        "value": "wait_decrease"
+                    },
+                    {
+                        "label": "Earliest Showtimes First",
+                        "value": "shows_increase"
+                    },
+                    {
+                        "label": "Latest Showtimes First",
+                        "value": "shows_decrease"
+                    }
+                ]
             }
         ]
     },

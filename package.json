@@ -1,7 +1,7 @@
 {
   "name": "waittimes",
   "author": "Thomas Stoeckert",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "keywords": [
     "pebble-app"
   ],
@@ -22,7 +22,8 @@
       "aplite",
       "basalt",
       "chalk",
-      "diorite"
+      "diorite",
+      "emery"
     ],
     "watchapp": {
       "watchface": false
@@ -34,10 +35,15 @@
       "i_attractionStatus[128]",
       "i_attractionCount",
       "i_connectionError",
-      "c_showParks[59]",
-      "c_showEmpty",
-      "c_showShowTimes",
-      "c_showValidDataOnly"
+      "c_typeVisibility[2]",
+      "c_hideClosed",
+      "c_sortOrder",
+      "c_newpark_count",
+      "c_newpark_names[32]",
+      "c_newpark_ids[32]",
+      "c_newpark_destids[32]",
+      "c_newpark_destcount",
+      "c_newpark_destnames[32]"
     ],
     "resources": {
       "media": [
@@ -55,6 +61,16 @@
           "type": "raw",
           "name": "GENERIC_QUESTION",
           "file": "pdc/Pebble_80x80_Generic_question.pdc"
+        },
+        {
+          "type": "font",
+          "name": "CUSTOM_FONT_JERSEY_SOLID_18",
+          "file": "font/Jersey10-Regular.ttf"
+        },
+        {
+          "type": "font",
+          "name": "CUSTOM_FONT_JERSEY_B_36",
+          "file": "font/Jersey25-Regular.ttf"
         }
       ]
     }
