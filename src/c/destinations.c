@@ -30,7 +30,7 @@ int parse_destinations_response(DictionaryIterator *iter, void *context){
     memset(s_park_names, 0, sizeof(char) * I_MAX_PARKS * I_MAX_PARK_NAME_LENGTH);
     memset(s_park_ids, 0, sizeof(char) * I_MAX_PARKS * I_PARK_UUID_LENGTH);
     memset(s_destination_names, 0, sizeof(char) * I_MAX_DESTINATIONS * I_MAX_DESTINATION_NAME_LENGTH);
-    memset(i_park_destination, 0, sizeof(u_char) * I_MAX_PARKS);
+    memset(i_park_destination, 0, sizeof(int) * I_MAX_PARKS);
 
     APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Received word that we'll be seeing data for %d parks", i_park_count);
     if(i_park_count <= 0) {
