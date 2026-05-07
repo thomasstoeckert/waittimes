@@ -3,7 +3,11 @@
 #include <pebble.h>
 
 #define I_MAX_ATTRACTIONS 100
+#if PBL_DISPLAY_WIDTH < 200
 #define I_MAX_ATTRACTION_NAME_LENGTH 20
+#else
+#define I_MAX_ATTRACTION_NAME_LENGTH 32
+#endif
 #define I_MAX_ATTRACTION_STATUS_LENGTH 20
 
 #define PWT_ATTRS_DEBUG false

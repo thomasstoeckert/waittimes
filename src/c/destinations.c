@@ -149,11 +149,11 @@ void persist_save_destinations_data()
     persist_write_data(PERSIST_KEY_DESTINATIONS_METADATA, &persist_dest_metadata, sizeof(PersistDestMetadata));
 
     // Store park data
-    PersistParkData working_park_persist[4];
+    PersistParkData working_park_persist[PERSIST_PARK_BLOCK_COUNT];
     int source_park_index = 0;
     while (source_park_index < i_park_count)
     {
-        int working_index = source_park_index % 4;
+        int working_index = source_park_index % PERSIST_PARK_BLOCK_COUNT;
         
         // For each park, put it into the working_park_persist array
         working_park_persist[working_index].park_destid_persist = i_park_destination[source_park_index];
@@ -164,12 +164,12 @@ void persist_save_destinations_data()
         strncpy(working_park_persist[working_index].park_uuid_persist,
             s_park_ids[source_park_index], I_PARK_UUID_LENGTH - 1);
         
-        if(source_park_index % 4 == 3)
+        if(source_park_index % PERSIST_PARK_BLOCK_COUNT == PERSIST_PARK_BLOCK_COUNT - 1)
         {
             // Save
-            int persist_key_offset = source_park_index / 4;
+            int persist_key_offset = source_park_index / PERSIST_PARK_BLOCK_COUNT;
             persist_write_data(PERSIST_KEY_PARKS_BASE + persist_key_offset, 
-                working_park_persist, sizeof(PersistParkData) * 4);
+                working_park_persist, sizeof(PersistParkData) * PERSIST_PARK_BLOCK_COUNT);
         }
 
         source_park_index += 1;
@@ -177,41 +177,41 @@ void persist_save_destinations_data()
 
     // If the park count didn't divide evenly into sets of four parks, the last
     // set of (1-3) won't have been stored. Store that.
-    if(i_park_count % 4 != 0) 
+    if(i_park_count % PERSIST_PARK_BLOCK_COUNT != 0) 
     {
-        int persist_key_offset = i_park_count / 4;
+        int persist_key_offset = i_park_count / PERSIST_PARK_BLOCK_COUNT;
         persist_write_data(PERSIST_KEY_PARKS_BASE + persist_key_offset,
-            working_park_persist, sizeof(PersistParkData) * 4);
+            working_park_persist, sizeof(PersistParkData) * PERSIST_PARK_BLOCK_COUNT);
     }
 
     // Store destinations data
     //
     // We can store six destination names in a 256-byte block 
     // (37 bytes per name) = 222 bytes
-    char working_destnames[6][I_PARK_UUID_LENGTH];
+    char working_destnames[PERSIST_DEST_BLOCK_COUNT][I_PARK_UUID_LENGTH];
     // Store'm
     for (int i = 0; i < i_destination_count; i++) 
     {
-        int working_destnames_index = i % 6;
+        int working_destnames_index = i % PERSIST_DEST_BLOCK_COUNT;
         
         strncpy(working_destnames[working_destnames_index], 
             s_destination_names[i], I_MAX_DESTINATION_NAME_LENGTH - 1);
             
-        if(working_destnames_index == 5)
+        if(working_destnames_index == PERSIST_DEST_BLOCK_COUNT - 1)
         {
-            int persist_key_offset = i / 6;
+            int persist_key_offset = i / PERSIST_DEST_BLOCK_COUNT;
             persist_write_data(PERSIST_KEY_DESTINATIONS_BASE + persist_key_offset, 
-                working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * 6);
+                working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * PERSIST_DEST_BLOCK_COUNT);
         }
     }
 
     // If the dest count didn't divide evenly into sets of six dests, the last
     // set of (1-5) won't have been stored. Store that.
-    if(i_destination_count % 6 != 0) 
+    if(i_destination_count % PERSIST_DEST_BLOCK_COUNT != 0) 
     {
-        int persist_key_offset = i_destination_count / 6;
+        int persist_key_offset = i_destination_count / PERSIST_DEST_BLOCK_COUNT;
         persist_write_data(PERSIST_KEY_DESTINATIONS_BASE + persist_key_offset,
-            working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * 6);
+            working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * PERSIST_DEST_BLOCK_COUNT);
     }
 
 
@@ -228,7 +228,9 @@ void persist_load_destinations_data()
         APP_LOG(APP_LOG_LEVEL_ERROR, "[D.C]: Unable to find any destinations data in storage. Not continuing load.");
         return;
     }
-    // APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Found metadatablock. Loading persist data from storage");
+    APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Found metadatablock. Loading persist data from storage");
+    APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Metadata block version is %d", persist_dest_metadata.version);
+    APP_LOG(APP_LOG_LEVEL_INFO, "[D.C]: Persist Data Size is %d", sizeof(PersistParkData));
     
     persist_read_data(PERSIST_KEY_DESTINATIONS_METADATA, &persist_dest_metadata, sizeof(PersistDestMetadata));
     
@@ -250,27 +252,33 @@ void persist_load_destinations_data()
     // Load parks data
     // Parks data is stored in 4-park data blocks. Estimate the number of data
     // blocks we should read
-    int expected_park_blocks = i_park_count / 4 + (i_park_count % 4 != 0);
-    // APP_LOG(APP_LOG_LEVEL_DEBUG, "I think we'll be seeing %d blocks of 4 parks, since we have %d total parks", expected_park_blocks, i_park_count);
+    int expected_park_blocks = i_park_count / PERSIST_PARK_BLOCK_COUNT + (i_park_count % PERSIST_PARK_BLOCK_COUNT != 0);
+    if(PWT_DEST_DEBUG)
+    {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "I think we'll be seeing %d blocks of % parks, since we have %d total parks", expected_park_blocks, PERSIST_PARK_BLOCK_COUNT, i_park_count);
+    }
     int park_idx = 0;
     for (int i = 0; i < expected_park_blocks; i++)
     {
         // Load a park block
-        PersistParkData working_park_persist[4];
+        PersistParkData working_park_persist[PERSIST_PARK_BLOCK_COUNT];
         persist_read_data(PERSIST_KEY_PARKS_BASE + i, working_park_persist, 
-            sizeof(PersistParkData) * 4);
+            sizeof(PersistParkData) * PERSIST_PARK_BLOCK_COUNT);
 
         
         // Pull out the amount of data I expect to be in it
         int remaining_count = i_park_count - park_idx;
         // Clamp between 0 and 4
         int set_count = remaining_count;
-        if(set_count > 4)
+        if(set_count > PERSIST_PARK_BLOCK_COUNT)
         {
-            set_count = 4;
+            set_count = PERSIST_PARK_BLOCK_COUNT;
         }
 
-        // APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a block from %d! I think we'll pull %d parks from it", PERSIST_KEY_PARKS_BASE + i, set_count);
+        if(PWT_DEST_DEBUG) 
+        {
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "Read a block from %d! I think we'll pull %d parks from it", PERSIST_KEY_PARKS_BASE + i, set_count);
+        }
         for (int j = 0; j < set_count; j++)
         {
             // Store that in big original array
@@ -292,21 +300,21 @@ void persist_load_destinations_data()
     // Load destinations data
     // Dest data is stored in 6-name blocks. Estimate the number of
     // data blocks that should be read
-    int expected_dest_blocks = i_destination_count / 6 + (i_destination_count % 6 != 0);
+    int expected_dest_blocks = i_destination_count / PERSIST_DEST_BLOCK_COUNT + (i_destination_count % PERSIST_DEST_BLOCK_COUNT != 0);
     int dest_idx = 0;
     for (int i = 0; i < expected_dest_blocks; i++)
     {
         // Load a dest block
-        char working_destnames[6][I_PARK_UUID_LENGTH];
+        char working_destnames[PERSIST_DEST_BLOCK_COUNT][I_PARK_UUID_LENGTH];
         persist_read_data(PERSIST_KEY_DESTINATIONS_BASE + i,
-            working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * 6);
+            working_destnames, sizeof(char) * I_PARK_UUID_LENGTH * PERSIST_DEST_BLOCK_COUNT);
 
         // Pull our the number of names we expect to be in it
         int remaining_count = i_destination_count - dest_idx;
         int set_count = remaining_count;
-        if(set_count > 6)
+        if(set_count > PERSIST_DEST_BLOCK_COUNT)
         {
-            set_count = 6;
+            set_count = PERSIST_DEST_BLOCK_COUNT;
         }
 
         // Store that in the big array

@@ -69,7 +69,7 @@ AttractionsAPI.prototype.reformatRawAttractionData = function(live_data) {
         const clean_attraction = {};
         // Clean the attraction name, too. Remove weird characters, trim
         // to max character length
-        clean_attraction["name"]   = textCleaner(raw_attraction.name, 20);
+        clean_attraction["name"]   = textCleaner(raw_attraction.name, 32);
 
         // Attraction status / type are pre-set by the API - not from the parks
         // themselves. This means that we don't have to worry about weird 

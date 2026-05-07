@@ -3,17 +3,29 @@
 #include <pebble.h>
 
 #define I_MAX_PARKS 32
+#if PBL_DISPLAY_WIDTH < 200
 #define I_MAX_PARK_NAME_LENGTH 23
+#else
+#define I_MAX_PARK_NAME_LENGTH 32
+#endif
 #define I_PARK_UUID_LENGTH 37
 #define I_MAX_DESTINATION_NAME_LENGTH I_MAX_PARK_NAME_LENGTH
 #define I_MAX_DESTINATIONS I_MAX_PARKS
 
 #define DESTINATIONS_ERROR -1
 
-#define PERSIST_VERSION_DESTINATIONS 1
+#define PERSIST_VERSION_DESTINATIONS 2
 #define PERSIST_KEY_DESTINATIONS_METADATA 4
 #define PERSIST_KEY_PARKS_BASE 5
 #define PERSIST_KEY_DESTINATIONS_BASE PERSIST_KEY_PARKS_BASE + 8
+
+// We chunk up our persistent data into the max size b256 blocks
+// We need to adjust the block count based on the size.
+// The PersistParkData object is composed of two char arrays and an int representing the
+// 
+#define PERSIST_PARK_DATA_SIZE (I_PARK_UUID_LENGTH + I_MAX_PARK_NAME_LENGTH + 4)
+#define PERSIST_PARK_BLOCK_COUNT (256 / PERSIST_PARK_DATA_SIZE)
+#define PERSIST_DEST_BLOCK_COUNT (256 / I_PARK_UUID_LENGTH)
 
 #define PWT_DEST_DEBUG false
 

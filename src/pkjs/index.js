@@ -31,9 +31,9 @@ function handleWaitTimeResponse(response_data)
 }
 
 function fireWaitTimesRequest(park_id) {
-    console.log(JSON.stringify(attractions));
-    console.log(attractions);
-    console.log(JSON.stringify(AttractionsAPI));
+    // console.log(JSON.stringify(attractions));
+    // console.log(attractions);
+    // console.log(JSON.stringify(AttractionsAPI));
     attractions.fetchRawAttractionsForPark(park_id, handleWaitTimeResponse);
 }
 
@@ -253,7 +253,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
     //
     // Gross..
     var dict = clay.getSettings(JSON.stringify(filtered_response));
-    console.log(JSON.stringify(dict));
+    // console.log(JSON.stringify(dict));
     Pebble.sendAppMessage(dict, function(e) {
         console.log('Sent config data to Pebble');
     }, function(e) {
