@@ -1,4 +1,5 @@
 const textCleaner = require('./text-cleaner');
+const datetime_utils = require('./datetime-utils');
 const keys = require('message_keys');
 
 function AttractionsAPI() {
@@ -256,7 +257,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         if(a_has_waits && b_has_waits) {
             // Handle case where names is same
             if(a["standby_wait"] == b["standby_wait"])
-                return a["name"].localeCompare(b["name"]);
+                return datetime_utils.safe_localeCompare(a["name"], b["name"]);
 
             // Sort waittimes
             return (b["standby_wait"] - a["standby_wait"]);
@@ -269,7 +270,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         // Check BGs.
         if(a_has_bg && b_has_bg) {
             // Sort by name
-            return a["name"].localeCompare(b["name"]);
+            return datetime_utils.safe_localeCompare(a["name"], b["name"]);
         }
 
         if(a_has_bg) return -1;
@@ -280,7 +281,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         if(a_has_shows && b_has_shows) {
             // Handle case where next showtime is the same
             if(a["next_showtimes"][0] == b["next_showtimes"][0])
-                return a["name"].localeCompare(b["name"]);
+                return datetime_utils.safe_localeCompare(a["name"], b["name"]);
 
             // Otherwise, sort showtimes
             return (a["next_showtimes"][0][0] - b["next_showtimes"][0][0]);
@@ -303,7 +304,7 @@ AttractionsAPI.prototype.sortAndFilterCleanAttractionData = function(clean_data,
         }
 
         // All else has failed. Sort by name
-        return a["name"].localeCompare(b["name"]);
+        return datetime_utils.safe_localeCompare(a["name"], b["name"]);
     }
 
     const sort_lut = {
@@ -381,11 +382,11 @@ AttractionsAPI.prototype.generateAttractionDataPackage = function(clean_sorted_d
             // report its end time
             if(remaining_shows == 0 && (now > next_show[0]))
             {
-                status_string = "Ends " + next_show[1].toLocaleTimeString('default', {timeStyle: 'short'});
+                status_string = "Ends " + datetime_utils.safe_timestring(next_show[1]);
             } else 
             {
                 // Report the start time of the next show
-                status_string = next_show[0].toLocaleTimeString('default', {timeStyle:'short'})
+                status_string = datetime_utils.safe_timestring(next_show[0]);
                 if(remaining_shows > 0) status_string += " + " + remaining_shows + " more";
             }
         } else {

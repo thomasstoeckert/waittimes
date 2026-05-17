@@ -2,6 +2,7 @@ var keys = require('message_keys');
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+var datetime_utils = require('./datetime-utils');
 
 const AttractionsAPI = require('./attractions');
 const attractions = new AttractionsAPI();
@@ -92,7 +93,7 @@ function launchClayWithDynamicConfig() {
                 dest_parks.push([park.name, park.id, element.name]);
             });
 
-            dest_parks.sort((a, b) => a[0].localeCompare(b[0]));
+            dest_parks.sort((a, b) => datetime_utils.safe_localeCompare(a[0], b[0]));
 
             clayLookup[element.id] = dest_parks;
 
@@ -106,9 +107,9 @@ function launchClayWithDynamicConfig() {
         }
     });
 
-    out_entries.sort((a, b) => a.label.localeCompare(b.label));
+    out_entries.sort((a, b) => datetime_utils.safe_localeCompare(a.label, b.label));
 
-    lonely_parks.sort((a, b) => a[0].localeCompare(b[0]))
+    lonely_parks.sort((a, b) => datetime_utils.safe_localeCompare(a[0], b[0]))
 
     clayLookup["lonely"] = lonely_parks;
     out_entries.push({
@@ -165,8 +166,14 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
     // I think we might be able to do so in an interesting way. Let's check
     // console.log(JSON.stringify(e.response));
-    const handled_response = JSON.parse(e.response);
-    console.log(e.response);
+    var handled_response;
+    try {
+        handled_response = JSON.parse(e.response);
+    } catch (error) {
+        console.log("Had an error decoding the data from our web request. Sometimes comes back URI encoded. Trying to decode that and see if it helps.")
+        const decoded_response = decodeURIComponent(e.response);
+        handled_response = JSON.parse(decoded_response);
+    }
     const filtered_response = {}
 
     // Okay. We've baked in our data in the "pig" message tags. If we
@@ -253,6 +260,10 @@ Pebble.addEventListener('webviewclosed', function(e) {
     //
     // Gross..
     var dict = clay.getSettings(JSON.stringify(filtered_response));
+    // Clay (in emulator) adds a "NaN" key for some reason at that step. Delete if exists.
+    if("NaN" in dict) {
+        delete dict["NaN"];
+    }
     // console.log(JSON.stringify(dict));
     Pebble.sendAppMessage(dict, function(e) {
         console.log('Sent config data to Pebble');
