@@ -31,6 +31,7 @@
     },
     "messageKeys": [
       "_ready",
+      "_forgot",
       "o_parkID",
       "i_attractionNameString[128]",
       "i_attractionStatus[128]",

@@ -6,6 +6,7 @@ var datetime_utils = require('./datetime-utils');
 
 const AttractionsAPI = require('./attractions');
 const attractions = new AttractionsAPI();
+const SETTINGS_FORGOT_KEY = "pwt_destinations_settings_forgot_cache";
 
 function handleWaitTimeResponse(response_data)
 {
@@ -141,7 +142,6 @@ Pebble.addEventListener("ready", function (e) {
     Pebble.sendAppMessage(payload, function () { });
 
     console.log("Destinations is currently fresh? " + destinations.hasFreshDestinations());
-    console.log(destinations.cache_data);
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
@@ -264,7 +264,11 @@ Pebble.addEventListener('webviewclosed', function(e) {
     if("NaN" in dict) {
         delete dict["NaN"];
     }
-    // console.log(JSON.stringify(dict));
+    
+    // Store our last-known settings values in localstorage for
+    // "remember" purposes
+    localStorage.setItem(SETTINGS_FORGOT_KEY, JSON.stringify(dict));
+
     Pebble.sendAppMessage(dict, function(e) {
         console.log('Sent config data to Pebble');
     }, function(e) {
@@ -286,5 +290,25 @@ Pebble.addEventListener('appmessage', function (e) {
         // It is! We need to get that information from the server
         console.log("Got a request to get the data for parkID " + data[keys.o_parkID]);
         fireWaitTimesRequest(data[keys.o_parkID]);
+    }
+
+    if (data[keys._forgot] !== undefined) {
+        // Our buddy on the watch side doesn't know if he's forgotten his settings.
+        // Check to see if we have anything in our settings cache. If we do, 
+        // send it back out to him.
+        console.log("Checking the settings cache to see if we've got anything in there...")
+        const some_data = JSON.parse(localStorage.getItem(SETTINGS_FORGOT_KEY));
+        console.log("Found something in our cache....");
+        console.log(JSON.stringify(some_data));
+        if(some_data != null) {
+            // We've got something! Send it back out.
+            
+            Pebble.sendAppMessage(some_data, function(e) {
+                console.log('Sent forgotten config data to Pebble');
+            }, function(e) {
+                console.log('Failed to send forgotten config data!');
+                console.log(JSON.stringify(e));
+            })
+        }
     }
 });

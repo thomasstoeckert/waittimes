@@ -37,3 +37,34 @@ int outbox_send_attractions_request(char *park_uuid)
     APP_LOG(APP_LOG_LEVEL_INFO, "Outbox successfully requested data for %s", park_uuid);
     return 0;
 }
+
+void outbox_send_forgot()
+{
+    
+    if(!s_js_ready)
+    {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "Outbox was asked to send a message before receiving a JS ready note");
+        return;
+    }
+
+    DictionaryIterator *out_iter;
+    AppMessageResult result = app_message_outbox_begin(&out_iter);
+
+    if(result != APP_MSG_OK)
+    {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox is not ready to send a message");
+        return;
+    }
+
+    dict_write_cstring(out_iter, MESSAGE_KEY__forgot, "?");
+    
+    result = app_message_outbox_send();
+
+    if(result != APP_MSG_OK)
+    {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox had an issue after sending the message");
+        return;
+    }
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Outbox successfully asked if we forgot anything");
+}

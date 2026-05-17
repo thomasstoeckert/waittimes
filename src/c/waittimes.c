@@ -13,6 +13,14 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context)
   if (ready_tuple)
   {
     outbox_set_ready(true);
+    // We know we're ready, but now we want to check.
+    // If we don't have any parks locally, it might just be that... we forgot.
+    //
+    // This can happen if we go through an app update or we switch watches.
+    //
+    // Ask our lovely phone-based pkjs friend remembers.
+    if(get_park_count() <= 0)
+      outbox_send_forgot();
   }
   
   Tuple *parkcount_tuple = dict_find(iter, MESSAGE_KEY_c_newpark_count);
