@@ -59,6 +59,14 @@ void page_attractions_load(Window *window)
     Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
+    GRect status_bar_bounds = GRect(0, 0, bounds.size.w, STATUS_BAR_LAYER_HEIGHT);
+    StatusBarLayer* status_bar = status_bar_layer_create();
+    bounds.size.h = bounds.size.h - STATUS_BAR_LAYER_HEIGHT;
+    bounds.origin.y = STATUS_BAR_LAYER_HEIGHT;
+
+    layer_set_frame(status_bar_layer_get_layer(status_bar), status_bar_bounds);
+    layer_add_child(window_layer, status_bar_layer_get_layer(status_bar));
+
     s_attractions_menu_layer = menu_layer_create(bounds);
     menu_layer_set_callbacks(s_attractions_menu_layer, NULL, (MenuLayerCallbacks)
         {
